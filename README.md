@@ -110,16 +110,11 @@ npm run db:seed
 
 Isso criará os seguintes usuários:
 
-| Role      | Email                          | Senha          |
-| --------- | ------------------------------ | -------------- |
-| Admin     | johnycristian2@gmail.com       | Admin@123456   |
-| Professor | mestre.silva@muaythai.com      | Prof@123456    |
-| Professor | coach.thiago@academiaelite.com | Prof@123456    |
-| Aluno     | joao.silva@aluno.com           | Student@123456 |
-| Aluno     | maria.costa@aluno.com          | Student@123456 |
-| Aluno     | carlos.lima@aluno.com          | Student@123456 |
-| Aluno     | ana.santos@aluno.com           | Student@123456 |
-| Aluno     | pedro.rocha@aluno.com          | Student@123456 |
+- 1 conta de administrador
+- 2 contas de professor
+- 5 contas de aluno
+
+As credenciais de seed sao apenas para desenvolvimento local e devem ser definidas em variaveis de ambiente ou no proprio script de seed, sem publicacao em documentacao versionada.
 
 ### 5. Iniciar o servidor de desenvolvimento
 
