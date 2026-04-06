@@ -1,0 +1,373 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =============================================================================
+   CSS VARIABLES — Dark Theme Base (padrão: Muay Thai / Plataforma Premium)
+   ============================================================================= */
+@layer base {
+  :root {
+    /* Fundo e superfície */
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 97%;
+
+    /* Cards */
+    --card: 0 0% 6.5%;
+    --card-foreground: 0 0% 97%;
+
+    /* Popover */
+    --popover: 0 0% 6.5%;
+    --popover-foreground: 0 0% 97%;
+
+    /* Primária: Vermelho Muay Thai */
+    --primary: 0 72% 50%;
+    --primary-foreground: 0 0% 98%;
+
+    /* Secundária */
+    --secondary: 0 0% 13%;
+    --secondary-foreground: 0 0% 97%;
+
+    /* Muted */
+    --muted: 0 0% 13%;
+    --muted-foreground: 0 0% 55%;
+
+    /* Accent */
+    --accent: 0 0% 16%;
+    --accent-foreground: 0 0% 97%;
+
+    /* Destrutivo */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    /* Bordas e inputs */
+    --border: 0 0% 16%;
+    --input: 0 0% 13%;
+    --ring: 0 72% 50%;
+
+    /* Border radius global */
+    --radius: 0.625rem;
+
+    /* Sidebar */
+    --sidebar-background: 0 0% 5%;
+    --sidebar-foreground: 0 0% 80%;
+    --sidebar-primary: 0 72% 50%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 0 0% 10%;
+    --sidebar-accent-foreground: 0 0% 90%;
+    --sidebar-border: 0 0% 14%;
+    --sidebar-ring: 0 72% 50%;
+
+    /* Charts */
+    --chart-1: 0 72% 50%;
+    --chart-2: 210 70% 55%;
+    --chart-3: 142 70% 45%;
+    --chart-4: 30 90% 55%;
+    --chart-5: 280 65% 60%;
+  }
+
+  /* ── TEMA CLARO ─────────────────────────────────────────────────────────── */
+  .light {
+    --background: 0 0% 97%;
+    --foreground: 0 0% 8%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 8%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 8%;
+    --primary: 0 72% 50%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 92%;
+    --secondary-foreground: 0 0% 15%;
+    --muted: 0 0% 92%;
+    --muted-foreground: 0 0% 42%;
+    --accent: 0 0% 90%;
+    --accent-foreground: 0 0% 10%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 80%;
+    --input: 0 0% 87%;
+    --ring: 0 72% 50%;
+    --sidebar-background: 0 0% 94%;
+    --sidebar-foreground: 0 0% 25%;
+    --sidebar-primary: 0 72% 50%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 0 0% 88%;
+    --sidebar-accent-foreground: 0 0% 10%;
+    --sidebar-border: 0 0% 78%;
+    --sidebar-ring: 0 72% 50%;
+  }
+
+  /* ── TEMA MUAY THAI ──────────────────────────────────────────────────────── */
+  [data-theme='muaythai'] {
+    --background: 0 0% 3%;
+    --card: 0 8% 6%;
+    --primary: 0 75% 47%;
+    --primary-foreground: 0 0% 98%;
+    --ring: 0 75% 47%;
+    --border: 0 12% 14%;
+    --sidebar-background: 0 8% 4%;
+    --sidebar-border: 0 12% 11%;
+    --sidebar-primary: 0 75% 47%;
+  }
+
+  /* ── TEMA FITNESS ────────────────────────────────────────────────────────── */
+  [data-theme='fitness'] {
+    --background: 0 0% 0%;
+    --card: 0 0% 5%;
+    --primary: 0 0% 96%;
+    --primary-foreground: 0 0% 4%;
+    --ring: 210 100% 60%;
+    --border: 0 0% 13%;
+    --accent: 210 100% 14%;
+    --sidebar-background: 0 0% 3%;
+    --sidebar-primary: 0 0% 96%;
+    --sidebar-primary-foreground: 0 0% 4%;
+    --sidebar-border: 0 0% 10%;
+  }
+
+  /* ── TEMA NUTRIÇÃO ───────────────────────────────────────────────────────── */
+  [data-theme='nutrition'] {
+    --primary: 142 70% 45%;
+    --primary-foreground: 0 0% 98%;
+    --ring: 142 70% 45%;
+    --sidebar-primary: 142 70% 45%;
+  }
+}
+
+/* =============================================================================
+   BASE GLOBAL
+   ============================================================================= */
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings:
+      'rlig' 1,
+      'calt' 1;
+  }
+
+  /* Tipografia base */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-heading tracking-tight;
+  }
+
+  /* Links */
+  a {
+    @apply transition-colors duration-200;
+  }
+
+  /* Foco acessível */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+}
+
+/* =============================================================================
+   SCROLLBAR CUSTOMIZADA
+   ============================================================================= */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted));
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+/* =============================================================================
+   SELEÇÃO DE TEXTO
+   ============================================================================= */
+::selection {
+  background: hsl(var(--primary) / 0.25);
+  color: hsl(var(--foreground));
+}
+
+/* =============================================================================
+   COMPONENTES UTILITÁRIOS
+   ============================================================================= */
+@layer components {
+  /* ── GRADIENTES DE HERO ──────────────────────────────────────────────────── */
+  .hero-glow-muaythai {
+    background: radial-gradient(
+      ellipse 90% 55% at 50% -10%,
+      rgba(185, 28, 28, 0.4) 0%,
+      transparent 70%
+    );
+  }
+  .hero-glow-fitness {
+    background: radial-gradient(
+      ellipse 90% 55% at 50% -10%,
+      rgba(59, 130, 246, 0.22) 0%,
+      transparent 70%
+    );
+  }
+
+  /* ── GRID DE FUNDO (padrão sutil) ────────────────────────────────────────── */
+  .bg-grid {
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.028) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.028) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  /* ── CARD COM BORDA GRADIENTE ────────────────────────────────────────────── */
+  .card-gradient-border {
+    position: relative;
+    background: hsl(var(--card));
+    border-radius: var(--radius);
+  }
+  .card-gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      135deg,
+      hsl(var(--primary) / 0.5),
+      transparent 60%
+    );
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* ── SHIMMER (skeleton loading) ─────────────────────────────────────────── */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 0%,
+      hsl(var(--muted) / 0.5) 50%,
+      hsl(var(--muted)) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2.2s linear infinite;
+  }
+
+  /* ── BADGE DE PREMIUM ────────────────────────────────────────────────────── */
+  .badge-premium {
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold;
+    background: linear-gradient(135deg, hsl(42 100% 50%), hsl(28 100% 45%));
+    color: #000;
+  }
+
+  /* ── TEXT GRADIENT ───────────────────────────────────────────────────────── */
+  .text-gradient-red {
+    background: linear-gradient(135deg, #ef4444, #dc2626, #991b1b);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .text-gradient-white {
+    background: linear-gradient(135deg, #ffffff, #d1d5db);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .text-gradient-gold {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b, #d97706);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* ── GLASSMORPHISM ───────────────────────────────────────────────────────── */
+  .glass {
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(12px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+  }
+  .glass-dark {
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  /* ── GLOW DOS BOTÕES ─────────────────────────────────────────────────────── */
+  .btn-glow-red:hover {
+    box-shadow: 0 0 24px rgba(220, 38, 38, 0.45);
+  }
+  .btn-glow-white:hover {
+    box-shadow: 0 0 24px rgba(255, 255, 255, 0.15);
+  }
+
+  /* ── BARRA DE PROGRESSO ANIMADA ──────────────────────────────────────────── */
+  .progress-bar-animated [data-state='complete'] > div {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--primary)),
+      hsl(var(--primary) / 0.7)
+    );
+  }
+
+  /* ── VIDEO PLAYER CONTAINER ──────────────────────────────────────────────── */
+  .video-container {
+    @apply relative w-full overflow-hidden rounded-xl;
+    aspect-ratio: 16 / 9;
+    background: #000;
+  }
+  .video-container iframe,
+  .video-container video {
+    @apply absolute inset-0 w-full h-full;
+  }
+}
+
+/* =============================================================================
+   UTILITÁRIOS TAILWIND EXTRAS
+   ============================================================================= */
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+  .text-pretty {
+    text-wrap: pretty;
+  }
+
+  /* Delay de animação */
+  .animation-delay-100 {
+    animation-delay: 100ms;
+  }
+  .animation-delay-200 {
+    animation-delay: 200ms;
+  }
+  .animation-delay-300 {
+    animation-delay: 300ms;
+  }
+  .animation-delay-500 {
+    animation-delay: 500ms;
+  }
+  .animation-delay-700 {
+    animation-delay: 700ms;
+  }
+  .animation-delay-1000 {
+    animation-delay: 1000ms;
+  }
+}
