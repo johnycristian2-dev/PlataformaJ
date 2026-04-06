@@ -1,57 +1,57 @@
-# Security and Incident Response
+# Segurança e Resposta a Incidentes
 
-## Security Contacts
+## Contatos de Segurança
 
-- Security mailbox: security@plataformaj.com
-- Privacy mailbox (LGPD): privacidade@plataformaj.com
+- E-mail de segurança: security@plataformaj.com
+- E-mail de privacidade (LGPD): privacidade@plataformaj.com
 
-## Immediate Containment Playbook
+## Plano de Contenção Imediata
 
-1. Revoke and rotate secrets immediately: `AUTH_SECRET`, `NEXTAUTH_SECRET`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, SMTP/API keys.
-2. Invalidate active sessions and reset credentials for affected users.
-3. Disable suspicious integrations/endpoints while triage runs.
-4. Preserve evidence (logs, request IDs, DB snapshots) before cleanup.
+1. Revogue e rotacione segredos imediatamente: `AUTH_SECRET`, `NEXTAUTH_SECRET`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, chaves SMTP/API.
+2. Invalide sessões ativas e redefina credenciais dos usuários afetados.
+3. Desative integrações/endpoints suspeitos enquanto o diagnóstico ocorre.
+4. Preserve evidências (logs, IDs de requisição, snapshots do banco) antes de qualquer limpeza.
 
-## Secret Rotation Checklist
+## Checklist de Rotação de Segredos
 
-1. Generate new strong secrets:
+1. Gere novos segredos fortes:
 
-- `openssl rand -base64 32` (or equivalent CSPRNG).
+- `openssl rand -base64 32` (ou CSPRNG equivalente).
 
-2. Replace in secure environment storage only (never in source files).
-3. Confirm Stripe webhook secret format starts with `whsec_` and matches endpoint.
-4. Redeploy and verify auth and billing flows.
-5. Revoke old secrets in provider dashboards.
+2. Substitua apenas no armazenamento seguro de variáveis de ambiente (nunca em arquivos versionados).
+3. Confirme que o segredo de webhook Stripe começa com `whsec_` e corresponde ao endpoint correto.
+4. Reimplante a aplicação e valide fluxos de autenticação e cobrança.
+5. Revogue as chaves antigas nos painéis dos provedores.
 
-## Data Breach Response (PII)
+## Resposta a Vazamento de Dados (PII)
 
-1. Identify exposed data classes: account, profile, billing, audit, support.
-2. Scope impact window and affected users.
-3. Notify legal/compliance and follow LGPD obligations.
-4. Notify affected users with clear remediation guidance.
-5. Publish post-incident report with timeline and fixes.
+1. Identifique as classes de dados expostas: conta, perfil, cobrança, auditoria e suporte.
+2. Delimite a janela de impacto e os usuários afetados.
+3. Acione jurídico/compliance e siga as obrigações da LGPD.
+4. Notifique os usuários impactados com instruções claras de mitigação.
+5. Publique relatório pós-incidente com linha do tempo e correções aplicadas.
 
-## Preventive Controls
+## Controles Preventivos
 
-1. Keep dependencies patched (weekly `npm audit --omit=dev`).
-2. Enforce least privilege in admin actions and server actions.
-3. Use hashed reset tokens and short TTL.
-4. Keep `AUTH_DEBUG=false` in production and avoid logging raw PII.
-5. Restrict remote image hosts and enforce CSP headers.
+1. Mantenha dependências atualizadas (`npm audit --omit=dev` semanal).
+2. Aplique princípio do menor privilégio em ações administrativas e server actions.
+3. Utilize tokens de reset com hash e TTL curto.
+4. Mantenha `AUTH_DEBUG=false` em produção e evite logs com PII em texto claro.
+5. Restrinja hosts remotos de imagem e aplique headers CSP.
 
-## Controlled Security Validation
+## Validação Controlada de Segurança
 
-- Static checks:
+- Verificações estáticas:
   - `npm run lint`
   - `npm audit --omit=dev`
-- Dynamic checks (OWASP ZAP baseline):
-  - Target a staging URL only.
-  - Run active scan only with explicit authorization.
-  - Save HTML/JSON reports and create remediation tasks by severity.
+- Verificações dinâmicas (baseline OWASP ZAP):
+  - Use apenas ambiente de staging.
+  - Execute varredura ativa somente com autorização explícita.
+  - Salve relatórios HTML/JSON e crie tarefas de correção por severidade.
 
-## Git Hygiene After Secret Exposure
+## Higiene de Git Após Exposição de Segredos
 
-1. Ensure `.env` is ignored and not tracked.
-2. Remove committed secrets from history using history rewrite in a real git repository.
-3. Force rotate all exposed secrets even after history cleanup.
-4. Invalidate caches/artifacts that may contain leaked values.
+1. Garanta que `.env` esteja ignorado e não rastreado.
+2. Remova segredos já commitados do histórico com reescrita de histórico no repositório Git real.
+3. Rotacione forçadamente todos os segredos expostos, mesmo após limpeza do histórico.
+4. Invalide caches/artefatos que possam conter valores vazados.
