@@ -459,7 +459,7 @@ export default async function HomePage() {
             {NICHES.map((niche) => (
               <Link
                 key={niche.id}
-                href={`/student/courses/catalog?niche=${niche.id}`}
+                href={`/catalog?niche=${niche.id}`}
                 className={`
                   group relative block overflow-hidden rounded-2xl border ${niche.border}
                   bg-gradient-to-br ${niche.color}
