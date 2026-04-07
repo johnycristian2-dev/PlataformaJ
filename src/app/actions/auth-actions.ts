@@ -30,6 +30,14 @@ function getPrismaConnectionMessage(
 ) {
   const message = error.message ?? ''
 
+  if (message.includes('Environment variable not found: DATABASE_URL')) {
+    return 'DATABASE_URL não está definida no ambiente de produção (Vercel). Configure e faça novo deploy.'
+  }
+
+  if (message.includes('P1013')) {
+    return 'DATABASE_URL inválida (P1013). Verifique formato postgresql:// e parâmetros SSL.'
+  }
+
   if (message.includes('P1000')) {
     return 'Falha de autenticação no banco (P1000). Revise usuário/senha do DATABASE_URL.'
   }
@@ -42,8 +50,20 @@ function getPrismaConnectionMessage(
     return 'Tempo de conexão com o banco excedido (P1002). Verifique latência e limites do provedor.'
   }
 
+  if (message.includes('P1003')) {
+    return 'Banco informado no DATABASE_URL não existe (P1003). Verifique o nome do database.'
+  }
+
+  if (message.includes('P1010')) {
+    return 'Acesso negado para este usuário no banco (P1010). Revise permissões e credenciais.'
+  }
+
   if (message.includes('P1017')) {
     return 'A conexão com o banco foi encerrada (P1017). Tente novamente e revise o pool/concurrency.'
+  }
+
+  if (message.includes("Can't reach database server")) {
+    return 'Não foi possível alcançar o banco. Verifique host/porta no DATABASE_URL e regras de rede.'
   }
 
   return 'Falha de conexão com o banco de dados. Verifique o DATABASE_URL e o Prisma.'
@@ -339,6 +359,24 @@ export async function registerAction(input: SignUpInput) {
     }
 
     if (error instanceof Prisma.PrismaClientValidationError) {
+      const message = error.message ?? ''
+
+      if (message.includes('Environment variable not found: DATABASE_URL')) {
+        return {
+          success: false,
+          error:
+            'DATABASE_URL não está definida no ambiente de produção (Vercel). Configure e faça novo deploy.',
+        }
+      }
+
+      if (message.includes('the URL must start with the protocol')) {
+        return {
+          success: false,
+          error:
+            'DATABASE_URL inválida. Use postgresql:// (ou postgres://) e revise a string de conexão.',
+        }
+      }
+
       return {
         success: false,
         error:
