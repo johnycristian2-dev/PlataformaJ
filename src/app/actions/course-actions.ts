@@ -5,6 +5,10 @@ import { randomUUID } from 'node:crypto'
 import { mkdir, unlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { auth } from '@/lib/auth'
+import {
+  requireProfessorOrAdminUser,
+  requireStudentOrAdminUser,
+} from '@/app/actions/_shared/guards'
 import { prisma } from '@/lib/prisma'
 import { createAuditLog } from '@/lib/audit'
 import { getSubscriptionAccessSnapshot } from '@/lib/subscriptions'
@@ -26,32 +30,6 @@ async function generateUniqueCertificateCode() {
 
     if (!exists) return code
   }
-}
-
-async function ensureProfessorOrAdmin() {
-  const session = await auth()
-  if (!session?.user?.id) {
-    throw new Error('Não autenticado')
-  }
-
-  if (!['PROFESSOR', 'ADMIN'].includes(session.user.role)) {
-    throw new Error('Sem permissão')
-  }
-
-  return session.user
-}
-
-async function ensureStudentOrAdmin() {
-  const session = await auth()
-  if (!session?.user?.id) {
-    throw new Error('Não autenticado')
-  }
-
-  if (!['STUDENT', 'ADMIN'].includes(session.user.role)) {
-    throw new Error('Sem permissão')
-  }
-
-  return session.user
 }
 
 async function generateUniqueCourseSlug(base: string) {
@@ -230,7 +208,7 @@ async function deleteLocalCourseThumbnail(thumbnailPath: string | null) {
 }
 
 export async function createCourseAction(formData: FormData) {
-  const user = await ensureProfessorOrAdmin()
+  const user = await requireProfessorOrAdminUser()
 
   const parsed = CreateCourseSchema.safeParse({
     title: formData.get('title'),
@@ -281,7 +259,7 @@ export async function createCourseAction(formData: FormData) {
 }
 
 export async function updateCourseAction(formData: FormData) {
-  const user = await ensureProfessorOrAdmin()
+  const user = await requireProfessorOrAdminUser()
   const courseId = String(formData.get('courseId') || '')
 
   const course = await prisma.course.findUnique({
@@ -339,7 +317,7 @@ export async function updateCourseAction(formData: FormData) {
 }
 
 export async function deleteCourseAction(formData: FormData) {
-  const user = await ensureProfessorOrAdmin()
+  const user = await requireProfessorOrAdminUser()
   const courseId = String(formData.get('courseId') || '')
 
   const course = await prisma.course.findUnique({
@@ -360,7 +338,7 @@ export async function deleteCourseAction(formData: FormData) {
 }
 
 export async function toggleCoursePublishAction(formData: FormData) {
-  const user = await ensureProfessorOrAdmin()
+  const user = await requireProfessorOrAdminUser()
   const courseId = String(formData.get('courseId') || '')
 
   const course = await prisma.course.findUnique({
@@ -384,7 +362,7 @@ export async function toggleCoursePublishAction(formData: FormData) {
 }
 
 export async function createModuleAction(formData: FormData) {
-  const user = await ensureProfessorOrAdmin()
+  const user = await requireProfessorOrAdminUser()
 
   const courseId = String(formData.get('courseId') || '')
   const course = await prisma.course.findUnique({
@@ -430,7 +408,7 @@ export async function createModuleAction(formData: FormData) {
 }
 
 export async function createLessonAction(formData: FormData) {
-  const user = await ensureProfessorOrAdmin()
+  const user = await requireProfessorOrAdminUser()
 
   const moduleId = String(formData.get('moduleId') || '')
   const moduleRecord = await prisma.module.findUnique({
@@ -490,7 +468,7 @@ export async function createLessonAction(formData: FormData) {
 }
 
 export async function deleteModuleAction(formData: FormData) {
-  const user = await ensureProfessorOrAdmin()
+  const user = await requireProfessorOrAdminUser()
   const moduleId = String(formData.get('moduleId') || '')
 
   const moduleRecord = await prisma.module.findUnique({
@@ -512,7 +490,7 @@ export async function deleteModuleAction(formData: FormData) {
 }
 
 export async function deleteLessonAction(formData: FormData) {
-  const user = await ensureProfessorOrAdmin()
+  const user = await requireProfessorOrAdminUser()
   const lessonId = String(formData.get('lessonId') || '')
 
   const lesson = await prisma.lesson.findUnique({
@@ -538,7 +516,7 @@ export async function deleteLessonAction(formData: FormData) {
 }
 
 export async function enrollInCourseAction(formData: FormData) {
-  const user = await ensureStudentOrAdmin()
+  const user = await requireStudentOrAdminUser()
   const courseId = String(formData.get('courseId') || '')
 
   const course = await prisma.course.findUnique({
@@ -587,7 +565,7 @@ export async function upsertLessonWatchTimeAction(input: {
   watchTime: number
   completed?: boolean
 }) {
-  const user = await ensureStudentOrAdmin()
+  const user = await requireStudentOrAdminUser()
 
   const lesson = await prisma.lesson.findUnique({
     where: { id: input.lessonId },
@@ -647,7 +625,7 @@ export async function upsertLessonWatchTimeAction(input: {
 }
 
 export async function toggleLessonCompleteAction(formData: FormData) {
-  const user = await ensureStudentOrAdmin()
+  const user = await requireStudentOrAdminUser()
 
   const lessonId = String(formData.get('lessonId') || '')
 

@@ -1,26 +1,13 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { createAuditLog } from '@/lib/audit'
+import { requireAdminUser, requireAuthUser } from '@/app/actions/_shared/guards'
 
 // ---------------------------------------------------------------------------
 // Auth helper
 // ---------------------------------------------------------------------------
-
-async function requireAuth() {
-  const session = await auth()
-  if (!session?.user?.id) throw new Error('Não autenticado')
-  return session.user
-}
-
-async function requireAdmin() {
-  const session = await auth()
-  if (!session?.user?.id) throw new Error('Não autenticado')
-  if (session.user.role !== 'ADMIN') throw new Error('Sem permissão de administrador')
-  return session.user
-}
 
 // ===========================================================================
 // LGPD — Solicitações de dados
@@ -28,7 +15,7 @@ async function requireAdmin() {
 
 export async function createDataRequestAction(formData: FormData) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuthUser()
 
     const type = String(formData.get('type') || '').trim()
     const reason = String(formData.get('reason') || '').trim()
@@ -68,9 +55,7 @@ export async function createDataRequestAction(formData: FormData) {
       actorId: user.id,
       actorRole: user.role,
       action:
-        type === 'EXPORT'
-          ? 'DATA_EXPORT_REQUESTED'
-          : 'DATA_DELETION_REQUESTED',
+        type === 'EXPORT' ? 'DATA_EXPORT_REQUESTED' : 'DATA_DELETION_REQUESTED',
       targetType: 'DataRequest',
       targetId: user.id,
     })
@@ -90,7 +75,7 @@ export async function createDataRequestAction(formData: FormData) {
 
 export async function processDataRequestAction(formData: FormData) {
   try {
-    const admin = await requireAdmin()
+    const admin = await requireAdminUser()
 
     const requestId = String(formData.get('requestId') || '').trim()
     const decision = String(formData.get('decision') || '').trim()
@@ -137,7 +122,11 @@ export async function processDataRequestAction(formData: FormData) {
           : isCompleted
             ? 'Solicitação de exclusão processada'
             : 'Solicitação de exclusão negada',
-        message: adminNote || (isCompleted ? 'Sua solicitação foi processada.' : 'Sua solicitação foi negada.'),
+        message:
+          adminNote ||
+          (isCompleted
+            ? 'Sua solicitação foi processada.'
+            : 'Sua solicitação foi negada.'),
         type: isCompleted ? 'SUCCESS' : 'WARNING',
         link: '/student/privacy',
       },
@@ -148,8 +137,12 @@ export async function processDataRequestAction(formData: FormData) {
       actorRole: admin.role,
       action:
         request.type === 'EXPORT'
-          ? (isCompleted ? 'DATA_EXPORT_COMPLETED' : 'DATA_DELETION_DENIED')
-          : (isCompleted ? 'DATA_DELETION_COMPLETED' : 'DATA_DELETION_DENIED'),
+          ? isCompleted
+            ? 'DATA_EXPORT_COMPLETED'
+            : 'DATA_DELETION_DENIED'
+          : isCompleted
+            ? 'DATA_DELETION_COMPLETED'
+            : 'DATA_DELETION_DENIED',
       targetType: 'DataRequest',
       targetId: requestId,
       metadata: { decision, requestType: request.type },
@@ -170,7 +163,7 @@ export async function processDataRequestAction(formData: FormData) {
 
 export async function exportUserDataAction() {
   try {
-    const user = await requireAuth()
+    const user = await requireAuthUser()
 
     const [
       profile,
@@ -226,7 +219,12 @@ export async function exportUserDataAction() {
       }),
       prisma.billingEvent.findMany({
         where: { userId: user.id },
-        select: { type: true, status: true, amountCents: true, createdAt: true },
+        select: {
+          type: true,
+          status: true,
+          amountCents: true,
+          createdAt: true,
+        },
         orderBy: { createdAt: 'desc' },
         take: 100,
       }),
@@ -268,7 +266,7 @@ export async function exportUserDataAction() {
 
 export async function updateCommunicationPreferencesAction(formData: FormData) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuthUser()
 
     const receiveEmail = formData.get('receiveEmail') === 'on'
     const receiveMarketing = formData.get('receiveMarketing') === 'on'

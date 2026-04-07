@@ -1,9 +1,9 @@
 'use server'
 
 import { revalidatePath, revalidateTag } from 'next/cache'
-import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { createAuditLog } from '@/lib/audit'
+import { requireAdminUser } from '@/app/actions/_shared/guards'
 import type { Role, SubscriptionStatus } from '@prisma/client'
 
 const allowedRoles: Role[] = ['ADMIN', 'PROFESSOR', 'STUDENT']
@@ -17,23 +17,9 @@ const allowedSubscriptionStatuses: SubscriptionStatus[] = [
   'EXPIRED',
 ]
 
-async function requireAdmin() {
-  const session = await auth()
-
-  if (!session?.user?.id) {
-    throw new Error('Não autenticado')
-  }
-
-  if (session.user.role !== 'ADMIN') {
-    throw new Error('Sem permissão de administrador')
-  }
-
-  return session.user
-}
-
 export async function updateUserRoleByAdminAction(formData: FormData) {
   try {
-    const admin = await requireAdmin()
+    const admin = await requireAdminUser()
 
     const userId = String(formData.get('userId') || '').trim()
     const role = String(formData.get('role') || '').trim() as Role
@@ -102,7 +88,7 @@ export async function updateSubscriptionStatusByAdminAction(
   formData: FormData,
 ) {
   try {
-    const admin = await requireAdmin()
+    const admin = await requireAdminUser()
 
     const subscriptionId = String(formData.get('subscriptionId') || '').trim()
     const status = String(
@@ -189,7 +175,7 @@ export async function updateSubscriptionStatusByAdminAction(
 
 export async function updateCourseStatusByAdminAction(formData: FormData) {
   try {
-    await requireAdmin()
+    await requireAdminUser()
 
     const courseId = String(formData.get('courseId') || '').trim()
     const publishStateRaw = String(formData.get('publishState') || '').trim()
@@ -237,7 +223,7 @@ export async function updateCourseStatusByAdminAction(formData: FormData) {
 
 export async function setProfessorApprovalByAdminAction(formData: FormData) {
   try {
-    const admin = await requireAdmin()
+    const admin = await requireAdminUser()
 
     const professorProfileId = String(
       formData.get('professorProfileId') || '',
@@ -289,7 +275,7 @@ export async function setProfessorApprovalByAdminAction(formData: FormData) {
 
 export async function runSecurityHousekeepingByAdminAction(formData: FormData) {
   try {
-    const admin = await requireAdmin()
+    const admin = await requireAdminUser()
 
     const keepRateLimitDaysRaw = Number(
       String(formData.get('keepRateLimitDays') || '14'),
@@ -366,7 +352,7 @@ export async function runSecurityHousekeepingByAdminAction(formData: FormData) {
 
 export async function resetAuthAttemptStatByAdminAction(formData: FormData) {
   try {
-    const admin = await requireAdmin()
+    const admin = await requireAdminUser()
 
     const attemptId = String(formData.get('attemptId') || '').trim()
     if (!attemptId) {

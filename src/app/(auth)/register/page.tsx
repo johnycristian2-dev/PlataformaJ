@@ -16,7 +16,7 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card'
-import { registerAction, loginAction } from '@/app/actions/auth-actions'
+import { registerAction } from '@/app/actions/auth-actions'
 import { SignUpSchema, type SignUpInput } from '@/lib/validations'
 
 const PW_RULES = [
@@ -49,8 +49,6 @@ export default function RegisterPage() {
       return
     }
     toast.success('Conta criada! Entrando...')
-    // Auto-login após cadastro
-    await loginAction({ email: data.email, password: data.password })
   }
 
   return (

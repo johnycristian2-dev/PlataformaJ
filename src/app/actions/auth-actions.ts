@@ -25,6 +25,30 @@ function hashResetToken(token: string) {
   return createHash('sha256').update(token).digest('hex')
 }
 
+function getPrismaConnectionMessage(
+  error: Prisma.PrismaClientInitializationError,
+) {
+  const message = error.message ?? ''
+
+  if (message.includes('P1000')) {
+    return 'Falha de autenticação no banco (P1000). Revise usuário/senha do DATABASE_URL.'
+  }
+
+  if (message.includes('P1001')) {
+    return 'Não foi possível alcançar o servidor do banco (P1001). Verifique host, porta e rede.'
+  }
+
+  if (message.includes('P1002')) {
+    return 'Tempo de conexão com o banco excedido (P1002). Verifique latência e limites do provedor.'
+  }
+
+  if (message.includes('P1017')) {
+    return 'A conexão com o banco foi encerrada (P1017). Tente novamente e revise o pool/concurrency.'
+  }
+
+  return 'Falha de conexão com o banco de dados. Verifique o DATABASE_URL e o Prisma.'
+}
+
 async function sendPasswordResetEmail(params: {
   to: string
   resetUrl: string
@@ -272,6 +296,12 @@ export async function registerAction(input: SignUpInput) {
       return createdUser
     })
 
+    await signIn('credentials', {
+      email: normalizedEmail,
+      password,
+      redirectTo: ROUTES.STUDENT.DASHBOARD,
+    })
+
     return {
       success: true,
       data: {
@@ -280,6 +310,16 @@ export async function registerAction(input: SignUpInput) {
       },
     }
   } catch (error: unknown) {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'digest' in error &&
+      typeof (error as { digest?: string }).digest === 'string' &&
+      (error as { digest: string }).digest.includes('NEXT_REDIRECT')
+    ) {
+      throw error
+    }
+
     console.error('[registerAction] error', error)
 
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -291,14 +331,18 @@ export async function registerAction(input: SignUpInput) {
       }
     }
 
-    if (
-      error instanceof Prisma.PrismaClientInitializationError ||
-      error instanceof Prisma.PrismaClientValidationError
-    ) {
+    if (error instanceof Prisma.PrismaClientInitializationError) {
+      return {
+        success: false,
+        error: getPrismaConnectionMessage(error),
+      }
+    }
+
+    if (error instanceof Prisma.PrismaClientValidationError) {
       return {
         success: false,
         error:
-          'Falha de conexão com o banco de dados. Verifique o DATABASE_URL e o Prisma.',
+          'Falha interna no Prisma Client. Rode prisma generate e faça novo deploy.',
       }
     }
 

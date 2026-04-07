@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { auth } from '@/lib/auth'
+import { requireProfessorOrAdminUser } from '@/app/actions/_shared/guards'
 import { prisma } from '@/lib/prisma'
 import { createAuditLog } from '@/lib/audit'
 import { updateThemeSettingsAction } from '@/app/actions/theme-actions'
@@ -19,15 +19,6 @@ type BatchActionKey =
   | 'APPLY_MONTHLY_GOAL'
   | 'RECOMMEND_LESSON'
   | 'COLLECTIVE_FEEDBACK'
-
-async function requireProfessorOrAdmin() {
-  const session = await auth()
-  if (!session?.user?.id) throw new Error('Não autenticado')
-  if (!['PROFESSOR', 'ADMIN'].includes(session.user.role)) {
-    throw new Error('Sem permissão')
-  }
-  return session.user
-}
 
 async function ensureStudentBelongsToProfessor(
   studentId: string,
@@ -119,7 +110,9 @@ async function getSegmentedStudentIds(
   }
 
   const matches = students.filter((student) => {
-    const fitnessLevel = (student.studentProfile?.fitnessLevel ?? '').toLowerCase()
+    const fitnessLevel = (
+      student.studentProfile?.fitnessLevel ?? ''
+    ).toLowerCase()
     const latestSubscription = student.subscriptions[0]
     const days14 = recentDays.get(student.id)?.size ?? 0
     const prevDays14 = previousDays.get(student.id)?.size ?? 0
@@ -136,11 +129,13 @@ async function getSegmentedStudentIds(
 
     const delayedTrack = student.enrollments.some(
       (enrollment) =>
-        now.getTime() - enrollment.enrolledAt.getTime() > 21 * 24 * 60 * 60 * 1000 &&
-        enrollment.progress < 20,
+        now.getTime() - enrollment.enrolledAt.getTime() >
+          21 * 24 * 60 * 60 * 1000 && enrollment.progress < 20,
     )
 
-    const atRisk = Boolean(stoppedAccess || frequencyDrop || nearCancel || delayedTrack)
+    const atRisk = Boolean(
+      stoppedAccess || frequencyDrop || nearCancel || delayedTrack,
+    )
 
     switch (segment) {
       case 'AT_RISK':
@@ -154,8 +149,8 @@ async function getSegmentedStudentIds(
       case 'PREMIUM':
         return Boolean(
           latestSubscription &&
-            ['ACTIVE', 'RECOVERY'].includes(latestSubscription.status) &&
-            latestSubscription.currentPeriodEnd > now,
+          ['ACTIVE', 'RECOVERY'].includes(latestSubscription.status) &&
+          latestSubscription.currentPeriodEnd > now,
         )
       case 'LOW_FREQUENCY':
         return days14 <= 2
@@ -171,7 +166,7 @@ async function getSegmentedStudentIds(
 
 export async function createProfessorTrainingAction(formData: FormData) {
   try {
-    const user = await requireProfessorOrAdmin()
+    const user = await requireProfessorOrAdminUser()
 
     const studentId = String(formData.get('studentId') || '')
     const name = String(formData.get('name') || '').trim()
@@ -189,7 +184,10 @@ export async function createProfessorTrainingAction(formData: FormData) {
     }
 
     if (!Number.isFinite(repeatWeeks) || repeatWeeks < 1 || repeatWeeks > 16) {
-      return { success: false, error: 'Recorrência deve estar entre 1 e 16 semanas' }
+      return {
+        success: false,
+        error: 'Recorrência deve estar entre 1 e 16 semanas',
+      }
     }
 
     if (user.role !== 'ADMIN') {
@@ -209,8 +207,7 @@ export async function createProfessorTrainingAction(formData: FormData) {
         data: {
           studentId,
           coachId: user.id,
-          name:
-            totalOccurrences > 1 ? `${name} • Semana ${index + 1}` : name,
+          name: totalOccurrences > 1 ? `${name} • Semana ${index + 1}` : name,
           objective: objective || null,
           notes: notes || null,
           frequency: frequency || null,
@@ -246,7 +243,7 @@ export async function createProfessorTrainingAction(formData: FormData) {
 
 export async function addTrainingExerciseAction(formData: FormData) {
   try {
-    const user = await requireProfessorOrAdmin()
+    const user = await requireProfessorOrAdminUser()
 
     const trainingId = String(formData.get('trainingId') || '')
     const name = String(formData.get('name') || '').trim()
@@ -292,7 +289,7 @@ export async function addTrainingExerciseAction(formData: FormData) {
 
 export async function createProfessorFeedbackAction(formData: FormData) {
   try {
-    const user = await requireProfessorOrAdmin()
+    const user = await requireProfessorOrAdminUser()
 
     const studentId = String(formData.get('studentId') || '')
     const trainingId = String(formData.get('trainingId') || '').trim()
@@ -341,7 +338,7 @@ export async function updateStudentMonthlyGoalByProfessorAction(
   formData: FormData,
 ) {
   try {
-    const user = await requireProfessorOrAdmin()
+    const user = await requireProfessorOrAdminUser()
 
     const studentId = String(formData.get('studentId') || '').trim()
     const monthlyGoalTargetRaw = String(
@@ -421,7 +418,7 @@ export async function updateStudentMonthlyGoalByProfessorAction(
 
 export async function createProfessorLiveAction(formData: FormData) {
   try {
-    const user = await requireProfessorOrAdmin()
+    const user = await requireProfessorOrAdminUser()
 
     const title = String(formData.get('title') || '').trim()
     const description = String(formData.get('description') || '').trim()
@@ -440,7 +437,10 @@ export async function createProfessorLiveAction(formData: FormData) {
     }
 
     if (!Number.isFinite(repeatWeeks) || repeatWeeks < 1 || repeatWeeks > 16) {
-      return { success: false, error: 'Recorrência deve estar entre 1 e 16 semanas' }
+      return {
+        success: false,
+        error: 'Recorrência deve estar entre 1 e 16 semanas',
+      }
     }
 
     const scheduledAt = new Date(scheduledAtRaw)
@@ -488,7 +488,7 @@ export async function createProfessorLiveAction(formData: FormData) {
 
 export async function runSegmentBatchAction(formData: FormData) {
   try {
-    const user = await requireProfessorOrAdmin()
+    const user = await requireProfessorOrAdminUser()
 
     const segment = String(formData.get('segment') || '').trim() as SegmentKey
     const action = String(formData.get('action') || '').trim() as BatchActionKey
@@ -519,7 +519,10 @@ export async function runSegmentBatchAction(formData: FormData) {
       'COLLECTIVE_FEEDBACK',
     ]
 
-    if (!allowedSegments.includes(segment) || !allowedActions.includes(action)) {
+    if (
+      !allowedSegments.includes(segment) ||
+      !allowedActions.includes(action)
+    ) {
       return { success: false, error: 'Segmento ou ação inválido' }
     }
 
@@ -534,7 +537,10 @@ export async function runSegmentBatchAction(formData: FormData) {
         : await getSegmentedStudentIds(user.id, segment)
 
     if (targetStudentIds.length === 0) {
-      return { success: false, error: 'Nenhum aluno encontrado para este segmento' }
+      return {
+        success: false,
+        error: 'Nenhum aluno encontrado para este segmento',
+      }
     }
 
     if (action === 'SEND_REMINDER') {
@@ -542,7 +548,8 @@ export async function runSegmentBatchAction(formData: FormData) {
         data: targetStudentIds.map((studentId) => ({
           userId: studentId,
           title: 'Lembrete do professor',
-          message: 'Mantenha sua consistência esta semana. Seu progresso importa.',
+          message:
+            'Mantenha sua consistência esta semana. Seu progresso importa.',
           type: 'INFO',
           link: '/student/dashboard',
         })),
@@ -550,8 +557,15 @@ export async function runSegmentBatchAction(formData: FormData) {
     }
 
     if (action === 'APPLY_MONTHLY_GOAL') {
-      if (!Number.isFinite(monthlyGoalTarget) || monthlyGoalTarget < 4 || monthlyGoalTarget > 31) {
-        return { success: false, error: 'Meta mensal deve estar entre 4 e 31 dias' }
+      if (
+        !Number.isFinite(monthlyGoalTarget) ||
+        monthlyGoalTarget < 4 ||
+        monthlyGoalTarget > 31
+      ) {
+        return {
+          success: false,
+          error: 'Meta mensal deve estar entre 4 e 31 dias',
+        }
       }
 
       await prisma.$transaction(async (tx) => {
@@ -594,7 +608,10 @@ export async function runSegmentBatchAction(formData: FormData) {
 
     if (action === 'COLLECTIVE_FEEDBACK') {
       if (!feedbackTitle || !feedbackContent) {
-        return { success: false, error: 'Título e conteúdo do feedback são obrigatórios' }
+        return {
+          success: false,
+          error: 'Título e conteúdo do feedback são obrigatórios',
+        }
       }
 
       await prisma.teacherFeedback.createMany({
@@ -636,7 +653,7 @@ export async function runSegmentBatchAction(formData: FormData) {
 
 export async function updateProfessorSettingsAction(formData: FormData) {
   try {
-    await requireProfessorOrAdmin()
+    await requireProfessorOrAdminUser()
 
     const result = await updateThemeSettingsAction({
       primaryColor: String(formData.get('primaryColor') || '#dc2626'),
