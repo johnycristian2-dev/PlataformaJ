@@ -349,6 +349,22 @@ export async function registerAction(input: SignUpInput) {
           error: 'Já existe uma conta com este e-mail',
         }
       }
+
+      if (error.code === 'P2021' || error.code === 'P2022') {
+        return {
+          success: false,
+          error:
+            'Banco sem schema atualizado. Execute Prisma DB Push/Migrate no banco de produção e faça novo deploy.',
+        }
+      }
+
+      if (error.code === 'P2024') {
+        return {
+          success: false,
+          error:
+            'Tempo esgotado ao obter conexão do pool (P2024). Verifique limites de conexão do banco.',
+        }
+      }
     }
 
     if (error instanceof Prisma.PrismaClientInitializationError) {
