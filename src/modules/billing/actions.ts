@@ -3,11 +3,22 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { addMonths, addYears } from 'date-fns'
+import { headers } from 'next/headers'
 import type Stripe from 'stripe'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { APP_URL, PLAN_SLUGS } from '@/lib/constants'
+import { PLAN_SLUGS } from '@/lib/constants'
 import { getStripe } from '@/lib/stripe'
+
+async function getAppUrl(): Promise<string> {
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '')
+  }
+  const headersList = await headers()
+  const host = headersList.get('x-forwarded-host') ?? headersList.get('host') ?? 'localhost:3000'
+  const proto = headersList.get('x-forwarded-proto') ?? 'https'
+  return `${proto}://${host}`
+}
 
 function periodEndByInterval(interval: 'MONTHLY' | 'QUARTERLY' | 'ANNUAL') {
   const now = new Date()
@@ -71,6 +82,8 @@ export async function createStripeCheckoutAction(formData: FormData) {
     },
   })
 
+  const appUrl = await getAppUrl()
+
   const checkout = await stripe.checkout.sessions.create({
     mode: 'subscription',
     customer: stripeCustomerId,
@@ -83,8 +96,8 @@ export async function createStripeCheckoutAction(formData: FormData) {
         Boolean,
       ) as Stripe.Checkout.SessionCreateParams.PaymentMethodType[],
     line_items: [{ price: plan.stripePriceId, quantity: 1 }],
-    success_url: `${APP_URL}${successPath}?payment=success`,
-    cancel_url: `${APP_URL}${cancelPath}?payment=canceled`,
+    success_url: `${appUrl}${successPath}?payment=success`,
+    cancel_url: `${appUrl}${cancelPath}?payment=canceled`,
     client_reference_id: session.user.id,
     metadata: {
       userId: session.user.id,
@@ -125,10 +138,11 @@ export async function createStripeBillingPortalAction(formData: FormData) {
     throw new Error('Nenhuma assinatura Stripe encontrada para este usuário')
   }
 
+  const appUrl = await getAppUrl()
   const stripe = getStripe()
   const portal = await stripe.billingPortal.sessions.create({
     customer: latest.stripeCustomerId,
-    return_url: `${APP_URL}${returnPath}`,
+    return_url: `${appUrl}${returnPath}`,
   })
 
   if (!portal.url) {
