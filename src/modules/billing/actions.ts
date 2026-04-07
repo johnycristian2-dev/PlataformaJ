@@ -15,7 +15,10 @@ async function getAppUrl(): Promise<string> {
     return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '')
   }
   const headersList = await headers()
-  const host = headersList.get('x-forwarded-host') ?? headersList.get('host') ?? 'localhost:3000'
+  const host =
+    headersList.get('x-forwarded-host') ??
+    headersList.get('host') ??
+    'localhost:3000'
   const proto = headersList.get('x-forwarded-proto') ?? 'https'
   return `${proto}://${host}`
 }
