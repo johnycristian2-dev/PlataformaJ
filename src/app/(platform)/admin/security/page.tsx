@@ -1,10 +1,10 @@
-import { auth } from '@/lib/auth'
+﻿import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import {
   resetAuthAttemptStatByAdminAction,
   runSecurityHousekeepingByAdminAction,
-} from '@/app/actions/admin-actions'
+} from '@/modules/admin/actions'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'

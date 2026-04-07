@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -26,7 +26,7 @@ import { cn, getInitials } from '@/lib/utils'
 import { ROUTES } from '@/lib/constants'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { logoutAction } from '@/app/actions/auth-actions'
+import { logoutAction } from '@/modules/auth/actions'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -1,7 +1,7 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useRef, useState, useTransition } from 'react'
-import { upsertLessonWatchTimeAction } from '@/app/actions/course-actions'
+import { upsertLessonWatchTimeAction } from '@/modules/course/actions'
 
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2]
 

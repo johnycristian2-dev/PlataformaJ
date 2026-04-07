@@ -1,4 +1,4 @@
-import { auth } from '@/lib/auth'
+﻿import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import {
@@ -13,7 +13,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { formatDate } from '@/lib/utils'
-import { processDataRequestAction as _processDataRequestAction } from '@/app/actions/privacy-actions'
+import { processDataRequestAction as _processDataRequestAction } from '@/modules/privacy/actions'
 
 const STATUS_LABEL: Record<string, string> = {
   PENDING: 'Pendente',

@@ -1,7 +1,7 @@
-import { auth } from '@/lib/auth'
+﻿import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import { getCurrentThemeSettings } from '@/app/actions/theme-actions'
-import { updateProfessorSettingsAction } from '@/app/actions/professor-actions'
+import { getCurrentThemeSettings } from '@/modules/theme/actions'
+import { updateProfessorSettingsAction } from '@/modules/professor/actions'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export default async function ProfessorSettingsPage() {

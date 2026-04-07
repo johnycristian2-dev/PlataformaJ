@@ -1,4 +1,4 @@
-import { notFound, redirect } from 'next/navigation'
+﻿import { notFound, redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -8,7 +8,7 @@ import {
   createModuleAction,
   deleteLessonAction,
   deleteModuleAction,
-} from '@/app/actions/course-actions'
+} from '@/modules/course/actions'
 import { BookOpen, PlusCircle, Video } from 'lucide-react'
 
 interface Props {

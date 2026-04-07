@@ -1,10 +1,10 @@
-'use client'
+﻿'use client'
 
 import { useTransition, useRef } from 'react'
 import { MessageCircle, Send, Loader2, User } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { createLessonCommentAction } from '@/app/actions/course-actions'
+import { createLessonCommentAction } from '@/modules/course/actions'
 
 interface Comment {
   id: string

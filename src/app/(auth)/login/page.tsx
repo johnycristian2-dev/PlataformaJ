@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, Suspense } from 'react'
 import { useForm } from 'react-hook-form'
@@ -16,7 +16,7 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card'
-import { loginAction } from '@/app/actions/auth-actions'
+import { loginAction } from '@/modules/auth/actions'
 import { SignInSchema, type SignInInput } from '@/lib/validations'
 
 function LoginForm() {

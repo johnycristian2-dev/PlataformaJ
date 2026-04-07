@@ -1,10 +1,10 @@
-import { auth } from '@/lib/auth'
+﻿import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import {
   setProfessorApprovalByAdminAction,
   updateCourseStatusByAdminAction,
-} from '@/app/actions/admin-actions'
+} from '@/modules/admin/actions'
 import { prisma } from '@/lib/prisma'
 import { unstable_cache } from 'next/cache'
 import {

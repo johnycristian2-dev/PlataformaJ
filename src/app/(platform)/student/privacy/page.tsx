@@ -1,4 +1,4 @@
-import { auth } from '@/lib/auth'
+﻿import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import {
@@ -22,7 +22,7 @@ import { formatDate } from '@/lib/utils'
 import {
   createDataRequestAction as _createDataRequestAction,
   updateCommunicationPreferencesAction as _updateCommPrefs,
-} from '@/app/actions/privacy-actions'
+} from '@/modules/privacy/actions'
 
 const STATUS_LABEL: Record<string, string> = {
   PENDING: 'Pendente',

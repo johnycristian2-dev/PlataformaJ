@@ -1,9 +1,9 @@
-import { auth } from '@/lib/auth'
+﻿import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { updateStudentProfileAction } from '@/app/actions/student-actions'
+import { updateStudentProfileAction } from '@/modules/student/actions'
 import { ROUTES } from '@/lib/constants'
 
 export default async function StudentProfilePage() {

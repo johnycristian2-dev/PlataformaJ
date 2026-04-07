@@ -1,4 +1,4 @@
-import Link from 'next/link'
+﻿import Link from 'next/link'
 import Image from 'next/image'
 import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
@@ -8,7 +8,7 @@ import {
   deleteCourseAction,
   toggleCoursePublishAction,
   updateCourseAction,
-} from '@/app/actions/course-actions'
+} from '@/modules/course/actions'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { BookOpen, PlusCircle, ChevronRight } from 'lucide-react'

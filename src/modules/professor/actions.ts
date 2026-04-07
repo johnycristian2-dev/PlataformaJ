@@ -1,10 +1,10 @@
-'use server'
+﻿'use server'
 
 import { revalidatePath } from 'next/cache'
-import { requireProfessorOrAdminUser } from '@/app/actions/_shared/guards'
+import { requireProfessorOrAdminUser } from '@/modules/_shared/guards'
 import { prisma } from '@/lib/prisma'
 import { createAuditLog } from '@/lib/audit'
-import { updateThemeSettingsAction } from '@/app/actions/theme-actions'
+import { updateThemeSettingsAction } from '@/modules/theme/actions'
 
 type SegmentKey =
   | 'AT_RISK'

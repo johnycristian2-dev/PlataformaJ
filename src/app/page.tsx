@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { auth } from '@/lib/auth'
 import { getDashboardRoute } from '@/lib/utils'
+import { createStripeCheckoutAction } from '@/modules/billing/actions'
 import {
   Play,
   Star,
@@ -657,17 +658,44 @@ export default async function HomePage() {
                   ))}
                 </ul>
 
-                <Button
-                  className="w-full"
-                  variant={plan.isPremium ? 'gradient' : 'outline'}
-                  size="lg"
-                  asChild
-                >
-                  <Link href={`/register?plan=${plan.name.toLowerCase()}`}>
-                    {plan.cta}
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </Button>
+                {session?.user?.role === 'STUDENT' ? (
+                  <form action={createStripeCheckoutAction}>
+                    <input
+                      type="hidden"
+                      name="planSlug"
+                      value={plan.isPremium ? 'premium' : 'basico'}
+                    />
+                    <input
+                      type="hidden"
+                      name="successPath"
+                      value="/student/courses/catalog"
+                    />
+                    <input type="hidden" name="cancelPath" value="/" />
+                    <Button
+                      className="w-full"
+                      variant={plan.isPremium ? 'gradient' : 'outline'}
+                      size="lg"
+                      type="submit"
+                    >
+                      {plan.cta}
+                      <ArrowRight className="w-4 h-4" />
+                    </Button>
+                  </form>
+                ) : (
+                  <Button
+                    className="w-full"
+                    variant={plan.isPremium ? 'gradient' : 'outline'}
+                    size="lg"
+                    asChild
+                  >
+                    <Link
+                      href={`/register?plan=${plan.isPremium ? 'premium' : 'basico'}`}
+                    >
+                      {plan.cta}
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </Button>
+                )}
               </div>
             ))}
           </div>

@@ -1,9 +1,9 @@
-'use server'
+﻿'use server'
 
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { createAuditLog } from '@/lib/audit'
-import { requireAdminUser } from '@/app/actions/_shared/guards'
+import { requireAdminUser } from '@/modules/_shared/guards'
 import type { Role, SubscriptionStatus } from '@prisma/client'
 
 const allowedRoles: Role[] = ['ADMIN', 'PROFESSOR', 'STUDENT']

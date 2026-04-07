@@ -1,10 +1,10 @@
-import { auth } from '@/lib/auth'
+﻿import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import {
   sendSupportMessageAction,
   updateSupportConversationStatusAction,
-} from '@/app/actions/support-actions'
+} from '@/modules/support/actions'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'

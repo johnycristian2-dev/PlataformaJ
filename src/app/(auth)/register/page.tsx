@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -16,7 +16,7 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card'
-import { registerAction } from '@/app/actions/auth-actions'
+import { registerAction } from '@/modules/auth/actions'
 import { SignUpSchema, type SignUpInput } from '@/lib/validations'
 
 const PW_RULES = [

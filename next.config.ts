@@ -12,12 +12,11 @@ const contentSecurityPolicy = [
   "frame-ancestors 'none'",
   "object-src 'none'",
   "img-src 'self' data: blob: https:",
-  "media-src 'self' blob: https://*.youtube.com https://*.googlevideo.com https://*.ytimg.com https://vimeo.com https://*.vimeo.com https://*.vimeocdn.com",
   "font-src 'self' data:",
   "style-src 'self' 'unsafe-inline'",
-  `script-src 'self' 'unsafe-inline'${isProd ? '' : " 'unsafe-eval'"}`,
-  "connect-src 'self' https://api.stripe.com https://*.stripe.com https://*.youtube.com https://*.googlevideo.com https://*.ytimg.com https://*.vimeo.com https://*.vimeocdn.com",
-  "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://vimeo.com",
+  `script-src 'self' 'unsafe-inline' https://js.stripe.com${isProd ? '' : " 'unsafe-eval'"}`,
+  "connect-src 'self' https://api.stripe.com https://*.stripe.com",
+  "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
   "form-action 'self'",
   ...(isProd ? ['upgrade-insecure-requests'] : []),
 ].join('; ')
@@ -57,9 +56,6 @@ const nextConfig: NextConfig = {
     formats: ['image/avif', 'image/webp'],
   },
   experimental: {
-    serverActions: {
-      allowedOrigins: ['localhost:3000'],
-    },
     turbo: {},
   },
   async headers() {

@@ -1,4 +1,4 @@
-import { auth } from '@/lib/auth'
+﻿import { auth } from '@/lib/auth'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
@@ -7,7 +7,7 @@ import {
   changeStripeSubscriptionPlanAction,
   createStripeBillingPortalAction,
   openPremiumCheckoutAction,
-} from '@/app/actions/subscription-actions'
+} from '@/modules/billing/actions'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {

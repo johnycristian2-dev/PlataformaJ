@@ -1,4 +1,4 @@
-import { auth } from '@/lib/auth'
+﻿import { auth } from '@/lib/auth'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { unstable_cache } from 'next/cache'
@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma'
 import {
   addTrainingExerciseAction,
   createProfessorTrainingAction,
-} from '@/app/actions/professor-actions'
+} from '@/modules/professor/actions'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Dumbbell, UserCircle, Calendar } from 'lucide-react'

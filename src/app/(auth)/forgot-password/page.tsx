@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import Link from 'next/link'
 import { useState } from 'react'
@@ -15,7 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { forgotPasswordAction } from '@/app/actions/auth-actions'
+import { forgotPasswordAction } from '@/modules/auth/actions'
 import {
   ForgotPasswordSchema,
   type ForgotPasswordInput,

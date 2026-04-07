@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import Link from 'next/link'
 import { useState } from 'react'
@@ -17,7 +17,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { resetPasswordAction } from '@/app/actions/auth-actions'
+import { resetPasswordAction } from '@/modules/auth/actions'
 
 const ResetFormSchema = z
   .object({

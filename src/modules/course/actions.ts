@@ -1,4 +1,4 @@
-'use server'
+﻿'use server'
 
 import { revalidatePath } from 'next/cache'
 import { randomUUID } from 'node:crypto'
@@ -8,7 +8,7 @@ import { auth } from '@/lib/auth'
 import {
   requireProfessorOrAdminUser,
   requireStudentOrAdminUser,
-} from '@/app/actions/_shared/guards'
+} from '@/modules/_shared/guards'
 import { prisma } from '@/lib/prisma'
 import { createAuditLog } from '@/lib/audit'
 import { getSubscriptionAccessSnapshot } from '@/lib/subscriptions'
