@@ -43,12 +43,23 @@ export default function RegisterPage() {
   const pwValue = watch('password', '')
 
   async function onSubmit(data: SignUpInput) {
-    const result = await registerAction(data)
-    if (!result.success) {
-      setError('root', { message: result.error })
-      return
+    try {
+      const result = await registerAction(data)
+      if (result && !result.success) {
+        setError('root', { message: result.error })
+      }
+    } catch (error: unknown) {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'digest' in error &&
+        typeof (error as { digest?: string }).digest === 'string' &&
+        (error as { digest: string }).digest.includes('NEXT_REDIRECT')
+      ) {
+        throw error
+      }
+      setError('root', { message: 'Erro ao criar conta. Tente novamente.' })
     }
-    toast.success('Conta criada! Entrando...')
   }
 
   return (
