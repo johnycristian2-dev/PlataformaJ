@@ -4,6 +4,7 @@
  * Estratégia de envio (em ordem de prioridade):
  *   1. Resend (API HTTP — preferido em produção)
  *   2. SMTP via Nodemailer (fallback para quem usa Gmail, Brevo, etc.)
+ *   3. Ethereal (somente desenvolvimento, para testes locais)
  *
  * Variáveis de ambiente necessárias:
  *   EMAIL_FROM          — ex: "Plataforma J <noreply@seudominio.com>"
@@ -25,9 +26,7 @@ export type SendEmailParams = {
   html: string
 }
 
-type SendEmailResult =
-  | { success: true }
-  | { success: false; error: string }
+type SendEmailResult = { success: true } | { success: false; error: string }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPER: layout base com header colorido
@@ -58,8 +57,14 @@ export function emailLayout(content: string): string {
 // Tenta Resend primeiro; se falhar ou não estiver configurado, tenta SMTP.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export async function sendEmail(params: SendEmailParams): Promise<SendEmailResult> {
-  const from = process.env.EMAIL_FROM?.trim()
+export async function sendEmail(
+  params: SendEmailParams,
+): Promise<SendEmailResult> {
+  const isProduction = process.env.NODE_ENV === 'production'
+  const from =
+    process.env.EMAIL_FROM?.trim() ||
+    (!isProduction ? 'Plataforma J <no-reply@plataforma-j.local>' : '')
+
   if (!from) {
     return { success: false, error: 'EMAIL_FROM não configurado' }
   }
@@ -85,7 +90,11 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
       if (response.ok) return { success: true }
 
       const text = await response.text()
-      console.warn('[email] Resend falhou, tentando SMTP:', response.status, text)
+      console.warn(
+        '[email] Resend falhou, tentando SMTP:',
+        response.status,
+        text,
+      )
     } catch (err) {
       console.warn('[email] Resend exception, tentando SMTP:', err)
     }
@@ -99,9 +108,48 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
   const smtpSecureRaw = process.env.SMTP_SECURE?.trim().toLowerCase()
 
   if (!smtpHost || !smtpPortRaw || !smtpUser || !smtpPass) {
-    return {
-      success: false,
-      error: 'Nenhum provedor de email configurado (Resend ou SMTP)',
+    if (isProduction) {
+      return {
+        success: false,
+        error: 'Nenhum provedor de email configurado (Resend ou SMTP)',
+      }
+    }
+
+    // Fallback local para desenvolvimento: cria caixa de teste temporária.
+    try {
+      const nodemailer = await import('nodemailer')
+      const testAccount = await nodemailer.createTestAccount()
+      const transporter = nodemailer.createTransport({
+        host: 'smtp.ethereal.email',
+        port: 587,
+        secure: false,
+        auth: {
+          user: testAccount.user,
+          pass: testAccount.pass,
+        },
+      })
+
+      const info = await transporter.sendMail({
+        from,
+        to: params.to,
+        subject: params.subject,
+        html: params.html,
+      })
+
+      const previewUrl = nodemailer.getTestMessageUrl(info)
+      if (previewUrl) {
+        console.info('[email] Preview URL (Ethereal):', previewUrl)
+      }
+
+      return { success: true }
+    } catch (err) {
+      return {
+        success: false,
+        error:
+          err instanceof Error
+            ? `Falha no fallback Ethereal: ${err.message}`
+            : 'Falha no fallback Ethereal',
+      }
     }
   }
 
@@ -169,7 +217,9 @@ export function buildPasswordResetHtml(params: { resetUrl: string }): string {
   `)
 }
 
-export function buildAccountLockedHtml(params: { retryAfterMinutes: number }): string {
+export function buildAccountLockedHtml(params: {
+  retryAfterMinutes: number
+}): string {
   return emailLayout(`
     <p style="margin:0 0 12px;font-weight:600;">Sua conta foi temporariamente bloqueada.</p>
     <p style="margin:0 0 12px;">Detectamos múltiplas tentativas malsucedidas. Por segurança, novos acessos foram bloqueados por <strong>${params.retryAfterMinutes} minutos</strong>.</p>

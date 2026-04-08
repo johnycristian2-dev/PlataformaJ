@@ -544,6 +544,28 @@ export async function forgotPasswordAction(email: string) {
 
   if (!emailResult.success) {
     console.warn('[forgotPasswordAction] email not sent', emailResult.error)
+
+    void recordAuthFailure({
+      action: 'FORGOT_PASSWORD',
+      channel: 'EMAIL',
+      identifier: normalizedEmail,
+      userId: user.id,
+      errorCode: 'EMAIL_DELIVERY_FAILED',
+    })
+
+    // Em produção mantemos resposta genérica para evitar enumeração de usuários.
+    if (process.env.NODE_ENV !== 'production') {
+      return {
+        success: false,
+        error: `Falha no envio do e-mail: ${emailResult.error}`,
+      }
+    }
+
+    return {
+      success: true,
+      message:
+        'Se o e-mail existir, você receberá instruções para redefinir a senha.',
+    }
   }
 
   void recordAuthSuccess({

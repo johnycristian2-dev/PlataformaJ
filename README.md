@@ -134,11 +134,37 @@ npm run build      # Build de produção
 npm run start      # Iniciar servidor de produção
 npm run lint       # Lint com ESLint
 
+npm run email:check # Valida configuração de email (modo atual)
+npm run email:check:prod # Validação estrita para produção
+npm run email:test  # Envia email de teste (Resend/SMTP/Ethereal local)
+
 npm run db:push    # Sincroniza schema sem migrations
 npm run db:migrate # Cria migration e aplica
 npm run db:seed    # Popula o banco com dados de teste
 npm run db:studio  # Abre o Prisma Studio (GUI do banco)
 npm run db:reset   # Reseta o banco e re-popula
+```
+
+---
+
+## Checklist de Email em Produção
+
+1. Configure `EMAIL_FROM` com domínio válido da sua empresa (ex.: `Plataforma J <noreply@seudominio.com>`).
+2. Configure um provedor de envio:
+   - Resend: `RESEND_API_KEY`
+   - ou SMTP completo: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`
+3. Garanta `NEXT_PUBLIC_APP_URL` com HTTPS (ex.: `https://app.seudominio.com`).
+
+Antes do deploy, rode:
+
+```bash
+npm run email:check:prod
+```
+
+Para disparar um teste manual de envio:
+
+```bash
+npm run email:test -- seu@email.com
 ```
 
 ---
