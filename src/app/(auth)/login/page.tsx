@@ -22,6 +22,7 @@ import { SignInSchema, type SignInInput } from '@/lib/validations'
 function LoginForm() {
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('callbackUrl') ?? undefined
+  const verified = searchParams.get('verified') === '1'
   const [showPw, setShowPw] = useState(false)
 
   const {
@@ -36,7 +37,12 @@ function LoginForm() {
   async function onSubmit(data: SignInInput) {
     const result = await loginAction({ ...data, callbackUrl })
     if (result && !result.success) {
-      setError('root', { message: result.error })
+      setError('root', {
+        message:
+          result.error === 'CredentialsSignin'
+            ? 'Email ou senha inválidos. Se ainda não confirmou seu email, verifique sua caixa de entrada.'
+            : result.error,
+      })
     }
     // Em caso de sucesso loginAction lança NEXT_REDIRECT — navegação automática
   }
@@ -53,6 +59,11 @@ function LoginForm() {
           className="space-y-4"
           noValidate
         >
+          {verified && (
+            <div className="rounded-md bg-emerald-500/10 border border-emerald-500/30 px-4 py-3 text-sm text-emerald-600 dark:text-emerald-400">
+              Email verificado com sucesso! Faça login para continuar.
+            </div>
+          )}
           {errors.root && (
             <div className="rounded-md bg-destructive/10 border border-destructive/30 px-4 py-3 text-sm text-destructive">
               {errors.root.message}

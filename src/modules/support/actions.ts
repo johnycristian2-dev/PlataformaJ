@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { ROUTES } from '@/lib/constants'
+import { sendEmail, buildSupportReplyHtml, buildSupportResolvedHtml } from '@/lib/email'
 import type {
   Role,
   SupportConversationCategory,
@@ -142,7 +143,7 @@ export async function sendSupportMessageAction(formData: FormData) {
       where: { id: conversationId },
       include: {
         user: {
-          select: { id: true, role: true },
+          select: { id: true, role: true, email: true, name: true },
         },
       },
     })
@@ -214,6 +215,19 @@ export async function sendSupportMessageAction(formData: FormData) {
     revalidateSupportViews(session.user.role)
     revalidateSupportViews(conversation.user.role)
 
+    // Notificar por email quando admin responde
+    if (isAdmin && conversation.user.email) {
+      void sendEmail({
+        to: conversation.user.email,
+        subject: `Resposta no seu chamado: ${conversation.subject}`,
+        html: buildSupportReplyHtml({
+          userName: conversation.user.name ?? 'Aluno',
+          subject: conversation.subject,
+          supportUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? ''}${getSupportPathByRole(conversation.user.role)}`,
+        }),
+      })
+    }
+
     return { success: true }
   } catch (error) {
     console.error('[sendSupportMessageAction] error', error)
@@ -245,7 +259,7 @@ export async function updateSupportConversationStatusAction(
 
     const conversation = await prisma.supportConversation.findUnique({
       where: { id: conversationId },
-      include: { user: { select: { id: true, role: true } } },
+      include: { user: { select: { id: true, role: true, email: true, name: true } } },
     })
 
     if (!conversation) {
@@ -307,6 +321,18 @@ export async function updateSupportConversationStatusAction(
 
     revalidateSupportViews(session.user.role)
     revalidateSupportViews(conversation.user.role)
+
+    // Notificar por email quando admin resolve o chamado
+    if (isAdmin && status === 'RESOLVED' && conversation.user.email) {
+      void sendEmail({
+        to: conversation.user.email,
+        subject: `Seu chamado foi resolvido: ${conversation.subject}`,
+        html: buildSupportResolvedHtml({
+          userName: conversation.user.name ?? 'Aluno',
+          subject: conversation.subject,
+        }),
+      })
+    }
 
     return { success: true }
   } catch (error) {

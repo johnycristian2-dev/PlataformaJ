@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { headers } from 'next/headers'
 import bcrypt from 'bcryptjs'
 import { createHash, randomBytes } from 'node:crypto'
 import { Prisma } from '@prisma/client'
@@ -20,9 +21,51 @@ import {
   type ResetPasswordInput,
 } from '@/lib/validations'
 import { slugify, getDashboardRoute } from '@/lib/utils'
+import {
+  sendEmail,
+  buildVerifyEmailHtml,
+  buildPasswordResetHtml,
+  buildAccountLockedHtml,
+} from '@/lib/email'
 
 function hashResetToken(token: string) {
   return createHash('sha256').update(token).digest('hex')
+}
+
+// Detecta a URL base da aplicação a partir dos headers da requisição.
+// Usado para montar links em emails (evita hardcoded localhost).
+async function getAppUrl(): Promise<string> {
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '')
+  }
+  const headersList = await headers()
+  const host =
+    headersList.get('x-forwarded-host') ??
+    headersList.get('host') ??
+    'localhost:3000'
+  const proto = headersList.get('x-forwarded-proto') ?? 'https'
+  return `${proto}://${host}`
+}
+
+// Gera token de verificação de email, salva no banco e envia o email.
+async function sendVerificationEmail(email: string) {
+  const appUrl = await getAppUrl()
+  const identifier = `email-verify:${email}`
+  const token = randomBytes(32).toString('hex')
+  const tokenHash = hashResetToken(token)
+  const expires = new Date(Date.now() + 1000 * 60 * 60 * 24) // 24h
+
+  await prisma.verificationToken.deleteMany({ where: { identifier } })
+  await prisma.verificationToken.create({
+    data: { identifier, token: tokenHash, expires },
+  })
+
+  const verifyUrl = `${appUrl}/verify-email?token=${token}`
+  return sendEmail({
+    to: email,
+    subject: 'Confirme seu email',
+    html: buildVerifyEmailHtml({ verifyUrl }),
+  })
 }
 
 function getPrismaConnectionMessage(
@@ -69,190 +112,6 @@ function getPrismaConnectionMessage(
   return 'Falha de conexão com o banco de dados. Verifique o DATABASE_URL e o Prisma.'
 }
 
-async function sendPasswordResetEmail(params: {
-  to: string
-  resetUrl: string
-}) {
-  const resendApiKey = process.env.RESEND_API_KEY?.trim()
-  const from = process.env.EMAIL_FROM?.trim()
-  const appName = process.env.NEXT_PUBLIC_APP_NAME ?? 'Plataforma J'
-  const subject = 'Redefinição de senha'
-
-  const html = `
-    <div style="font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; max-width: 640px; margin: 0 auto; padding: 28px; color: #111; background: #f5f5f5;">
-      <div style="background: #fff; border: 1px solid #e5e5e5; border-radius: 12px; overflow: hidden;">
-        <div style="padding: 18px 20px; background: linear-gradient(120deg, #7f1d1d, #dc2626); color: #fff;">
-          <h2 style="margin: 0; font-size: 20px; letter-spacing: 0.2px;">${appName}</h2>
-        </div>
-        <div style="padding: 22px 20px;">
-          <p style="margin: 0 0 12px;">Recebemos uma solicitação para redefinir sua senha.</p>
-          <p style="margin: 0 0 18px;">Use o botão abaixo para criar uma nova senha. Este link expira em 30 minutos.</p>
-          <p style="margin: 0 0 18px;">
-            <a href="${params.resetUrl}" style="display: inline-block; padding: 10px 16px; background: #dc2626; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600;">
-              Redefinir senha
-            </a>
-          </p>
-          <p style="margin: 0; font-size: 13px; color: #555;">Se você não solicitou esta alteração, ignore este e-mail.</p>
-          <p style="margin: 12px 0 0; font-size: 12px; color: #777; word-break: break-all;">
-            Link alternativo: ${params.resetUrl}
-          </p>
-        </div>
-      </div>
-    </div>
-  `
-
-  if (resendApiKey && from) {
-    try {
-      const response = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${resendApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from,
-          to: [params.to],
-          subject,
-          html,
-        }),
-      })
-
-      if (response.ok) {
-        return { success: true }
-      }
-
-      const text = await response.text()
-      console.warn(
-        '[sendPasswordResetEmail] Resend failed, trying SMTP fallback',
-        `${response.status} ${text}`,
-      )
-    } catch (error) {
-      console.warn(
-        '[sendPasswordResetEmail] Resend exception, trying SMTP',
-        error,
-      )
-    }
-  }
-
-  const smtpHost = process.env.SMTP_HOST?.trim()
-  const smtpPortRaw = process.env.SMTP_PORT?.trim()
-  const smtpUser = process.env.SMTP_USER?.trim()
-  const smtpPass = process.env.SMTP_PASS?.trim()
-  const smtpSecureRaw = process.env.SMTP_SECURE?.trim().toLowerCase()
-
-  if (!from || !smtpHost || !smtpPortRaw || !smtpUser || !smtpPass) {
-    return {
-      success: false,
-      error:
-        'Nenhum provedor de e-mail configurado (Resend ou SMTP incompletos)',
-    }
-  }
-
-  const smtpPort = Number(smtpPortRaw)
-  if (!Number.isFinite(smtpPort) || smtpPort <= 0) {
-    return { success: false, error: 'SMTP_PORT inválido' }
-  }
-
-  const smtpSecure =
-    smtpSecureRaw === 'true' || smtpSecureRaw === '1' || smtpPort === 465
-
-  try {
-    const nodemailer = await import('nodemailer')
-    const transporter = nodemailer.createTransport({
-      host: smtpHost,
-      port: smtpPort,
-      secure: smtpSecure,
-      auth: {
-        user: smtpUser,
-        pass: smtpPass,
-      },
-    })
-
-    await transporter.sendMail({
-      from,
-      to: params.to,
-      subject,
-      html,
-    })
-
-    return { success: true }
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Erro desconhecido',
-    }
-  }
-}
-
-async function sendAccountLockedEmail(params: {
-  to: string
-  retryAfterMinutes: number
-}) {
-  const resendApiKey = process.env.RESEND_API_KEY?.trim()
-  const from = process.env.EMAIL_FROM?.trim()
-  const appName = process.env.NEXT_PUBLIC_APP_NAME ?? 'Plataforma J'
-  const subject = `${appName} — Conta temporariamente bloqueada`
-
-  const html = `
-    <div style="font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; max-width: 640px; margin: 0 auto; padding: 28px; color: #111; background: #f5f5f5;">
-      <div style="background: #fff; border: 1px solid #e5e5e5; border-radius: 12px; overflow: hidden;">
-        <div style="padding: 18px 20px; background: linear-gradient(120deg, #7f1d1d, #dc2626); color: #fff;">
-          <h2 style="margin: 0; font-size: 20px; letter-spacing: 0.2px;">${appName}</h2>
-        </div>
-        <div style="padding: 22px 20px;">
-          <p style="margin: 0 0 12px; font-weight: 600;">Sua conta foi temporariamente bloqueada.</p>
-          <p style="margin: 0 0 12px;">Detectamos múltiplas tentativas malsucedidas nesta conta. Por segurança, novos acessos foram bloqueados por <strong>${params.retryAfterMinutes} minutos</strong>.</p>
-          <p style="margin: 0 0 18px;">Após esse período, você poderá tentar novamente normalmente.</p>
-          <p style="margin: 0; font-size: 13px; color: #555;"><strong>Se não foi você:</strong> recomendamos redefinir sua senha assim que possível.</p>
-        </div>
-      </div>
-    </div>
-  `
-
-  if (resendApiKey && from) {
-    try {
-      const response = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${resendApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ from, to: [params.to], subject, html }),
-      })
-      if (response.ok) return
-    } catch {
-      // fall through to SMTP
-    }
-  }
-
-  const smtpHost = process.env.SMTP_HOST?.trim()
-  const smtpPortRaw = process.env.SMTP_PORT?.trim()
-  const smtpUser = process.env.SMTP_USER?.trim()
-  const smtpPass = process.env.SMTP_PASS?.trim()
-  const smtpSecureRaw = process.env.SMTP_SECURE?.trim().toLowerCase()
-
-  if (!from || !smtpHost || !smtpPortRaw || !smtpUser || !smtpPass) return
-
-  const smtpPort = Number(smtpPortRaw)
-  if (!Number.isFinite(smtpPort) || smtpPort <= 0) return
-
-  const smtpSecure =
-    smtpSecureRaw === 'true' || smtpSecureRaw === '1' || smtpPort === 465
-
-  try {
-    const nodemailer = await import('nodemailer')
-    const transporter = nodemailer.createTransport({
-      host: smtpHost,
-      port: smtpPort,
-      secure: smtpSecure,
-      auth: { user: smtpUser, pass: smtpPass },
-    })
-    await transporter.sendMail({ from, to: params.to, subject, html })
-  } catch {
-    // best-effort — silent fail
-  }
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // REGISTER
 // ─────────────────────────────────────────────────────────────────────────────
@@ -284,7 +143,7 @@ export async function registerAction(input: SignUpInput) {
 
     const hashedPassword = await bcrypt.hash(password, 12)
 
-    const user = await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx) => {
       const createdUser = await tx.user.create({
         data: {
           name: name.trim(),
@@ -312,23 +171,19 @@ export async function registerAction(input: SignUpInput) {
           fitnessLevel: 'iniciante',
         },
       })
-
-      return createdUser
     })
 
-    await signIn('credentials', {
-      email: normalizedEmail,
-      password,
-      redirectTo: ROUTES.STUDENT.DASHBOARD,
-    })
-
-    return {
-      success: true,
-      data: {
-        id: user.id,
-        email: user.email,
-      },
+    const verificationSendResult = await sendVerificationEmail(normalizedEmail)
+    if (!verificationSendResult.success) {
+      console.warn(
+        '[registerAction] verification email not sent',
+        verificationSendResult.error,
+      )
     }
+
+    // Redireciona para página de aviso — o usuário ainda não está logado
+    const { redirect } = await import('next/navigation')
+    redirect(`/verify-email?email=${encodeURIComponent(normalizedEmail)}`)
   } catch (error: unknown) {
     if (
       typeof error === 'object' &&
@@ -492,9 +347,10 @@ export async function loginAction(
     }
 
     if (loginRateLimit.isNewBlock) {
-      void sendAccountLockedEmail({
+      void sendEmail({
         to: normalizedEmail,
-        retryAfterMinutes: 15,
+        subject: 'Conta temporariamente bloqueada',
+        html: buildAccountLockedHtml({ retryAfterMinutes: 15 }),
       })
     }
 
@@ -638,9 +494,10 @@ export async function forgotPasswordAction(email: string) {
       errorCode: 'RATE_LIMIT_EMAIL',
     })
     if (forgotRateLimit.isNewBlock) {
-      void sendAccountLockedEmail({
+      void sendEmail({
         to: normalizedEmail,
-        retryAfterMinutes: 30,
+        subject: 'Conta temporariamente bloqueada',
+        html: buildAccountLockedHtml({ retryAfterMinutes: 30 }),
       })
     }
     return {
@@ -676,15 +533,13 @@ export async function forgotPasswordAction(email: string) {
     },
   })
 
-  const appUrl =
-    process.env.NEXTAUTH_URL ??
-    process.env.NEXT_PUBLIC_APP_URL ??
-    'http://localhost:3000'
+  const appUrl = await getAppUrl()
   const resetUrl = `${appUrl}/reset-password?token=${token}`
 
-  const emailResult = await sendPasswordResetEmail({
+  const emailResult = await sendEmail({
     to: normalizedEmail,
-    resetUrl,
+    subject: 'Redefinição de senha',
+    html: buildPasswordResetHtml({ resetUrl }),
   })
 
   if (!emailResult.success) {
@@ -919,4 +774,140 @@ export async function generateUniqueSlug(
   }
 
   return slug
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VERIFICAÇÃO DE EMAIL
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Chamado quando o usuário clica no link do email — valida o token e marca
+// emailVerified no banco. Depois faz login automático e redireciona.
+export async function verifyEmailAction(token: string) {
+  if (!token?.trim()) {
+    return { success: false, error: 'Token inválido' }
+  }
+
+  const tokenHash = hashResetToken(token.trim())
+  const now = new Date()
+
+  const record = await prisma.verificationToken.findUnique({
+    where: { token: tokenHash },
+  })
+
+  if (
+    !record ||
+    !record.identifier.startsWith('email-verify:') ||
+    record.expires < now
+  ) {
+    return { success: false, error: 'Link de verificação inválido ou expirado' }
+  }
+
+  const email = record.identifier.replace('email-verify:', '').trim()
+
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true, password: true, emailVerified: true },
+  })
+
+  if (!user) {
+    return { success: false, error: 'Usuário não encontrado' }
+  }
+
+  if (user.emailVerified) {
+    // já verificado — apenas redireciona
+    const { redirect } = await import('next/navigation')
+    redirect(ROUTES.STUDENT.DASHBOARD)
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({
+      where: { id: user.id },
+      data: { emailVerified: now },
+    })
+    await tx.verificationToken.deleteMany({
+      where: { identifier: record.identifier },
+    })
+  })
+
+  // Login automático após verificação
+  // Só é possível se o usuário tem senha (cadastro por credentials)
+  if (user.password) {
+    const { redirect } = await import('next/navigation')
+    // Não temos a senha em texto aqui — redirecionamos para login com mensagem
+    redirect(`${ROUTES.LOGIN}?verified=1`)
+  }
+
+  return { success: true }
+}
+
+// Reenvia o email de verificação (botão "reenviar" na página /verify-email)
+export async function resendVerificationEmailAction(email: string) {
+  const validated = ForgotPasswordSchema.safeParse({ email })
+  if (!validated.success) {
+    return { success: false, error: 'Email inválido' }
+  }
+
+  const normalizedEmail = validated.data.email.toLowerCase().trim()
+  const clientIp = await getRequestIpIdentifier()
+
+  if (clientIp) {
+    const ipLimit = await consumeRateLimit({
+      action: 'RESEND_VERIFY_EMAIL_IP',
+      identifier: clientIp,
+      maxAttempts: 10,
+      windowMs: 30 * 60 * 1000,
+      blockMs: 30 * 60 * 1000,
+    })
+
+    if (!ipLimit.allowed) {
+      return {
+        success: false,
+        error: `Muitas tentativas. Tente novamente em ${ipLimit.retryAfterSeconds ?? 60}s.`,
+      }
+    }
+  }
+
+  const resendLimit = await consumeRateLimit({
+    action: 'RESEND_VERIFY_EMAIL',
+    identifier: normalizedEmail,
+    maxAttempts: 5,
+    windowMs: 30 * 60 * 1000,
+    blockMs: 30 * 60 * 1000,
+  })
+
+  if (!resendLimit.allowed) {
+    return {
+      success: false,
+      error: `Muitas tentativas. Tente novamente em ${resendLimit.retryAfterSeconds ?? 60}s.`,
+    }
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { email: normalizedEmail },
+    select: { id: true, emailVerified: true },
+  })
+
+  // Resposta genérica — não revela se o email existe no banco (segurança)
+  if (!user || user.emailVerified) {
+    return {
+      success: true,
+      message:
+        'Se o e-mail existir e não estiver verificado, você receberá um novo link.',
+    }
+  }
+
+  const emailResult = await sendVerificationEmail(normalizedEmail)
+  if (!emailResult.success) {
+    return {
+      success: false,
+      error:
+        'Não foi possível enviar o email agora. Tente novamente em instantes.',
+    }
+  }
+
+  return {
+    success: true,
+    message:
+      'Novo link de verificação enviado. Verifique sua caixa de entrada.',
+  }
 }

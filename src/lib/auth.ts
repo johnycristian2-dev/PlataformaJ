@@ -58,6 +58,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
             role: true,
             password: true,
             isActive: true,
+            emailVerified: true,
           },
         })
 
@@ -65,6 +66,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         if (!user) return null
         if (!user.password) return null // login via OAuth não tem senha
         if (!user.isActive) return null // conta desativada
+        if (!user.emailVerified) return null // email não verificado
 
         // 4. Compara a senha com o hash
         const passwordsMatch = await bcrypt.compare(password, user.password)

@@ -9,6 +9,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { PLAN_SLUGS } from '@/lib/constants'
 import { getStripe } from '@/lib/stripe'
+import { sendEmail, buildSubscriptionCanceledHtml } from '@/lib/email'
 
 async function getAppUrl(): Promise<string> {
   if (process.env.NEXT_PUBLIC_APP_URL) {
@@ -208,6 +209,34 @@ export async function cancelStripeSubscriptionAction(formData: FormData) {
   revalidateTag('subscriptions')
   revalidatePath('/student/subscription')
   revalidatePath('/student/courses/catalog')
+
+  // Email de confirmação de cancelamento
+  const userData = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      email: true,
+      name: true,
+      subscriptions: {
+        where: { id: localSubscription.id },
+        select: { currentPeriodEnd: true, plan: { select: { name: true } } },
+        take: 1,
+      },
+    },
+  })
+  if (userData?.email) {
+    const sub = userData.subscriptions[0]
+    void sendEmail({
+      to: userData.email,
+      subject: 'Sua assinatura foi cancelada',
+      html: buildSubscriptionCanceledHtml({
+        userName: userData.name ?? 'Aluno',
+        planName: sub?.plan?.name ?? 'Premium',
+        accessUntil: sub?.currentPeriodEnd
+          ? new Date(sub.currentPeriodEnd).toLocaleDateString('pt-BR')
+          : 'fim do ciclo atual',
+      }),
+    })
+  }
 }
 
 export async function changeStripeSubscriptionPlanAction(formData: FormData) {
