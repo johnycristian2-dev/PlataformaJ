@@ -17,6 +17,7 @@ export const SignInSchema = z.object({
 
 export const SignUpSchema = z
   .object({
+    role: z.enum(['STUDENT', 'PROFESSOR']).optional().default('STUDENT'),
     name: z
       .string({ required_error: 'Nome é obrigatório' })
       .min(2, { message: 'Nome deve ter no mínimo 2 caracteres' })
@@ -37,10 +38,134 @@ export const SignUpSchema = z
     confirmPassword: z.string({
       required_error: 'Confirmação de senha é obrigatória',
     }),
+    birthDate: z.string().optional(),
+    phone: z.string().max(20, { message: 'Telefone inválido' }).optional(),
+    contactEmail: z
+      .string()
+      .email({ message: 'E-mail de contato inválido' })
+      .toLowerCase()
+      .trim()
+      .optional(),
+    contactPhone: z
+      .string()
+      .max(20, { message: 'Telefone para contato inválido' })
+      .optional(),
+    cpf: z
+      .string()
+      .regex(/^\d{11}$/, { message: 'CPF deve conter 11 dígitos numéricos' })
+      .optional(),
+    educationLevel: z.string().max(80).optional(),
+    focusArea: z.string().max(120).optional(),
+    objective: z
+      .string()
+      .max(1200, { message: 'Objetivo muito longo' })
+      .optional(),
+    specialties: z.array(z.string().trim()).max(12).optional(),
+    experience: z
+      .string()
+      .max(1600, { message: 'Descrição de experiência muito longa' })
+      .optional(),
+    yearsTeaching: z.coerce.number().int().min(0).max(60).optional(),
+    city: z.string().max(80).optional(),
+    state: z.string().max(80).optional(),
+    availability: z.string().max(120).optional(),
+    instagram: z.string().max(120).optional(),
+    linkedin: z.string().max(180).optional(),
+    portfolioUrl: z
+      .string()
+      .url({ message: 'Portfólio deve ser uma URL válida' })
+      .optional(),
   })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: 'As senhas não coincidem',
-    path: ['confirmPassword'],
+  .superRefine((data, ctx) => {
+    if (data.password !== data.confirmPassword) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'As senhas não coincidem',
+        path: ['confirmPassword'],
+      })
+    }
+
+    if (data.role !== 'PROFESSOR') return
+
+    if (!data.birthDate) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Data de nascimento é obrigatória para candidatura',
+        path: ['birthDate'],
+      })
+    }
+
+    if (!data.phone) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Telefone é obrigatório para candidatura',
+        path: ['phone'],
+      })
+    }
+
+    if (!data.contactEmail) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'E-mail para contato é obrigatório para candidatura',
+        path: ['contactEmail'],
+      })
+    }
+
+    if (!data.contactPhone) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Telefone para contato é obrigatório para candidatura',
+        path: ['contactPhone'],
+      })
+    }
+
+    if (!data.cpf) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'CPF é obrigatório para candidatura',
+        path: ['cpf'],
+      })
+    }
+
+    if (!data.educationLevel) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Escolaridade é obrigatória para candidatura',
+        path: ['educationLevel'],
+      })
+    }
+
+    if (!data.focusArea) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Foco de atuação é obrigatório para candidatura',
+        path: ['focusArea'],
+      })
+    }
+
+    if (!data.objective || data.objective.trim().length < 20) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Descreva seu objetivo com pelo menos 20 caracteres',
+        path: ['objective'],
+      })
+    }
+
+    if (!data.specialties || data.specialties.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Informe ao menos uma especialidade',
+        path: ['specialties'],
+      })
+    }
+
+    if (!data.experience || data.experience.trim().length < 30) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Descreva sua experiência com pelo menos 30 caracteres',
+        path: ['experience'],
+      })
+    }
   })
 
 export const ForgotPasswordSchema = z.object({

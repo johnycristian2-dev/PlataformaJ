@@ -332,3 +332,41 @@ export function buildSupportResolvedHtml(params: {
     <p style="margin:0;font-size:13px;color:#555;">Se o problema persistir, abra um novo chamado a qualquer momento.</p>
   `)
 }
+
+export function buildProfessorApplicationApprovedHtml(params: {
+  userName: string
+  dashboardUrl: string
+}): string {
+  return emailLayout(`
+    <p style="margin:0 0 12px;">Olá, <strong>${params.userName}</strong>! 🎉</p>
+    <p style="margin:0 0 12px;">Sua candidatura para atuar como <strong>Professor</strong> foi aprovada.</p>
+    <p style="margin:0 0 18px;">Seu acesso à área de professor já está disponível. Clique no botão abaixo para entrar no painel.</p>
+    <p style="margin:0 0 18px;">
+      <a href="${params.dashboardUrl}" style="display:inline-block;padding:10px 16px;background:#16a34a;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">
+        Acessar painel do professor
+      </a>
+    </p>
+  `)
+}
+
+export function buildProfessorApplicationRejectedHtml(params: {
+  userName: string
+  reason?: string | null
+  reapplyUrl: string
+}): string {
+  return emailLayout(`
+    <p style="margin:0 0 12px;">Olá, <strong>${params.userName}</strong>.</p>
+    <p style="margin:0 0 12px;">Analisamos sua candidatura para atuar como professor e, no momento, ela foi <strong>rejeitada</strong>.</p>
+    ${
+      params.reason
+        ? `<p style="margin:0 0 12px;"><strong>Motivo informado:</strong> ${params.reason}</p>`
+        : ''
+    }
+    <p style="margin:0 0 18px;">Você pode ajustar suas informações e enviar uma nova candidatura.</p>
+    <p style="margin:0 0 18px;">
+      <a href="${params.reapplyUrl}" style="display:inline-block;padding:10px 16px;background:#dc2626;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">
+        Atualizar candidatura
+      </a>
+    </p>
+  `)
+}

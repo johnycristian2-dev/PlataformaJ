@@ -67,8 +67,15 @@ const getAdminData = unstable_cache(
           },
         }),
         prisma.professorProfile.findMany({
-          where: { isApproved: false },
-          include: { user: { select: { name: true, email: true } } },
+          where: {
+            isApproved: false,
+            applicationStatus: 'PENDING',
+            applicationSubmittedAt: { not: null },
+          },
+          include: {
+            user: { select: { name: true, email: true } },
+          },
+          orderBy: { applicationSubmittedAt: 'desc' },
           take: 5,
         }),
         prisma.professorApprovalDecision.findMany({
@@ -518,6 +525,79 @@ export default async function AdminDashboardPage() {
                       Pendente
                     </Badge>
                   </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-muted-foreground">
+                    <p>
+                      <span className="font-medium text-foreground">
+                        Escolaridade:
+                      </span>{' '}
+                      {p.educationLevel ?? 'Não informado'}
+                    </p>
+                    <p>
+                      <span className="font-medium text-foreground">Foco:</span>{' '}
+                      {p.focusArea ?? 'Não informado'}
+                    </p>
+                    <p>
+                      <span className="font-medium text-foreground">CPF:</span>{' '}
+                      {p.cpf ?? 'Não informado'}
+                    </p>
+                    <p>
+                      <span className="font-medium text-foreground">
+                        Contato:
+                      </span>{' '}
+                      {p.contactPhone ?? p.phone ?? p.user.email}
+                    </p>
+                    <p>
+                      <span className="font-medium text-foreground">
+                        Cidade/UF:
+                      </span>{' '}
+                      {p.city || p.state
+                        ? `${p.city ?? '-'} / ${p.state ?? '-'}`
+                        : 'Não informado'}
+                    </p>
+                    <p>
+                      <span className="font-medium text-foreground">
+                        Exp. docência:
+                      </span>{' '}
+                      {typeof p.yearsTeaching === 'number'
+                        ? `${p.yearsTeaching} anos`
+                        : 'Não informado'}
+                    </p>
+                  </div>
+
+                  {p.specialtiesDetailed.length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      <span className="font-medium text-foreground">
+                        Especialidades:
+                      </span>{' '}
+                      {p.specialtiesDetailed.join(', ')}
+                    </p>
+                  )}
+
+                  {p.teachingObjective && (
+                    <p className="text-xs text-muted-foreground">
+                      <span className="font-medium text-foreground">
+                        Objetivo:
+                      </span>{' '}
+                      {p.teachingObjective}
+                    </p>
+                  )}
+
+                  {p.teachingExperience && (
+                    <p className="text-xs text-muted-foreground">
+                      <span className="font-medium text-foreground">
+                        Experiência:
+                      </span>{' '}
+                      {p.teachingExperience}
+                    </p>
+                  )}
+
+                  <p className="text-xs text-muted-foreground">
+                    Enviado em:{' '}
+                    {p.applicationSubmittedAt
+                      ? formatDate(p.applicationSubmittedAt)
+                      : 'Não informado'}
+                  </p>
 
                   <div className="flex flex-wrap items-center gap-2">
                     <form action={setProfessorApproval}>

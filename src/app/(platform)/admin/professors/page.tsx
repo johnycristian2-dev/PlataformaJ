@@ -73,6 +73,43 @@ export default async function AdminProfessorsPage() {
                 <p className="text-xs text-muted-foreground mt-2">
                   Criado em {formatDate(prof.user.createdAt)}
                 </p>
+
+                {prof.applicationSubmittedAt && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Candidatura enviada em{' '}
+                    {formatDate(prof.applicationSubmittedAt)}
+                  </p>
+                )}
+
+                <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-muted-foreground">
+                  <p>
+                    <span className="font-medium text-foreground">Status:</span>{' '}
+                    {prof.applicationStatus ??
+                      (prof.isApproved ? 'APPROVED' : 'PENDING')}
+                  </p>
+                  <p>
+                    <span className="font-medium text-foreground">Foco:</span>{' '}
+                    {prof.focusArea ?? 'Não informado'}
+                  </p>
+                  <p>
+                    <span className="font-medium text-foreground">
+                      Escolaridade:
+                    </span>{' '}
+                    {prof.educationLevel ?? 'Não informado'}
+                  </p>
+                  <p>
+                    <span className="font-medium text-foreground">
+                      Contato:
+                    </span>{' '}
+                    {prof.contactPhone ?? prof.phone ?? prof.user.email}
+                  </p>
+                </div>
+
+                {prof.rejectionReason && (
+                  <p className="text-xs text-destructive mt-2">
+                    Último motivo de rejeição: {prof.rejectionReason}
+                  </p>
+                )}
               </div>
             ))
           )}

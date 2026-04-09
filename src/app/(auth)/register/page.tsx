@@ -1,11 +1,11 @@
 ﻿'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { Eye, EyeOff, Flame, CheckCircle2, XCircle } from 'lucide-react'
-import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -26,8 +26,11 @@ const PW_RULES = [
 ]
 
 export default function RegisterPage() {
+  const searchParams = useSearchParams()
+  const isProfessorFlow = searchParams.get('role') === 'professor'
   const [showPw, setShowPw] = useState(false)
   const [showConfirmPw, setShowConfirmPw] = useState(false)
+  const [specialtiesText, setSpecialtiesText] = useState('')
 
   const {
     register,
@@ -38,13 +41,46 @@ export default function RegisterPage() {
   } = useForm<SignUpInput>({
     resolver: zodResolver(SignUpSchema),
     mode: 'onChange',
+    defaultValues: {
+      role: isProfessorFlow ? 'PROFESSOR' : 'STUDENT',
+    },
   })
 
   const pwValue = watch('password', '')
+  const professorRoleValue = useMemo(
+    () => (isProfessorFlow ? 'PROFESSOR' : 'STUDENT'),
+    [isProfessorFlow],
+  )
 
   async function onSubmit(data: SignUpInput) {
+    const specialties = specialtiesText
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean)
+
+    const payload: SignUpInput = {
+      ...data,
+      role: professorRoleValue,
+      specialties,
+      cpf: data.cpf?.replace(/\D/g, ''),
+      birthDate: data.birthDate?.trim() || undefined,
+      phone: data.phone?.trim() || undefined,
+      contactEmail: data.contactEmail?.trim() || undefined,
+      contactPhone: data.contactPhone?.trim() || undefined,
+      educationLevel: data.educationLevel?.trim() || undefined,
+      focusArea: data.focusArea?.trim() || undefined,
+      objective: data.objective?.trim() || undefined,
+      experience: data.experience?.trim() || undefined,
+      city: data.city?.trim() || undefined,
+      state: data.state?.trim() || undefined,
+      availability: data.availability?.trim() || undefined,
+      instagram: data.instagram?.trim() || undefined,
+      linkedin: data.linkedin?.trim() || undefined,
+      portfolioUrl: data.portfolioUrl?.trim() || undefined,
+    }
+
     try {
-      const result = await registerAction(data)
+      const result = await registerAction(payload)
       if (result && !result.success) {
         setError('root', { message: result.error })
       }
@@ -88,9 +124,26 @@ export default function RegisterPage() {
               className="space-y-4"
               noValidate
             >
+              <input
+                type="hidden"
+                value={professorRoleValue}
+                {...register('role')}
+              />
+
               {errors.root && (
                 <div className="rounded-md bg-destructive/10 border border-destructive/30 px-4 py-3 text-sm text-destructive">
                   {errors.root.message}
+                </div>
+              )}
+
+              {isProfessorFlow && (
+                <div className="rounded-md border border-primary/25 bg-primary/5 px-4 py-3 text-sm">
+                  <p className="font-medium text-foreground">
+                    Candidatura de Professor
+                  </p>
+                  <p className="text-muted-foreground mt-1">
+                    Preencha o questionário para análise no painel ADMIN.
+                  </p>
                 </div>
               )}
 
@@ -116,6 +169,230 @@ export default function RegisterPage() {
                   {...register('email')}
                 />
               </div>
+
+              {isProfessorFlow && (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="birthDate">
+                        Idade (data de nascimento)
+                      </Label>
+                      <Input
+                        id="birthDate"
+                        type="date"
+                        error={errors.birthDate?.message}
+                        {...register('birthDate')}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="cpf">CPF</Label>
+                      <Input
+                        id="cpf"
+                        placeholder="Somente números"
+                        error={errors.cpf?.message}
+                        {...register('cpf')}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="phone">Telefone principal</Label>
+                      <Input
+                        id="phone"
+                        placeholder="(00) 00000-0000"
+                        error={errors.phone?.message}
+                        {...register('phone')}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="contactPhone">
+                        Telefone para contato
+                      </Label>
+                      <Input
+                        id="contactPhone"
+                        placeholder="(00) 00000-0000"
+                        error={errors.contactPhone?.message}
+                        {...register('contactPhone')}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="contactEmail">E-mail para contato</Label>
+                    <Input
+                      id="contactEmail"
+                      type="email"
+                      placeholder="contato@dominio.com"
+                      error={errors.contactEmail?.message}
+                      {...register('contactEmail')}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="educationLevel">Escolaridade</Label>
+                      <select
+                        id="educationLevel"
+                        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                        {...register('educationLevel')}
+                      >
+                        <option value="">Selecione</option>
+                        <option value="Ensino médio">Ensino médio</option>
+                        <option value="Técnico">Técnico</option>
+                        <option value="Graduação">Graduação</option>
+                        <option value="Pós-graduação">Pós-graduação</option>
+                        <option value="Mestrado">Mestrado</option>
+                        <option value="Doutorado">Doutorado</option>
+                        <option value="Outro">Outro</option>
+                      </select>
+                      {errors.educationLevel?.message && (
+                        <p className="text-xs text-destructive">
+                          {errors.educationLevel.message}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label htmlFor="focusArea">Foco de atuação</Label>
+                      <Input
+                        id="focusArea"
+                        placeholder="Ex: Musculação, Muay Thai, Nutrição"
+                        error={errors.focusArea?.message}
+                        {...register('focusArea')}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="specialtiesText">
+                      Especialidades (separadas por vírgula)
+                    </Label>
+                    <Input
+                      id="specialtiesText"
+                      placeholder="Ex: Hipertrofia, Emagrecimento, Treino funcional"
+                      value={specialtiesText}
+                      onChange={(event) =>
+                        setSpecialtiesText(event.target.value)
+                      }
+                    />
+                    {errors.specialties?.message && (
+                      <p className="text-xs text-destructive">
+                        {errors.specialties.message as string}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="yearsTeaching">Anos de experiência</Label>
+                      <Input
+                        id="yearsTeaching"
+                        type="number"
+                        min={0}
+                        max={60}
+                        placeholder="Ex: 5"
+                        error={errors.yearsTeaching?.message}
+                        {...register('yearsTeaching', { valueAsNumber: true })}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="availability">Disponibilidade</Label>
+                      <Input
+                        id="availability"
+                        placeholder="Ex: Noites e finais de semana"
+                        error={errors.availability?.message}
+                        {...register('availability')}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="city">Cidade</Label>
+                      <Input
+                        id="city"
+                        placeholder="Sua cidade"
+                        error={errors.city?.message}
+                        {...register('city')}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="state">Estado</Label>
+                      <Input
+                        id="state"
+                        placeholder="Seu estado"
+                        error={errors.state?.message}
+                        {...register('state')}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="objective">Objetivo na plataforma</Label>
+                    <textarea
+                      id="objective"
+                      rows={3}
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      placeholder="Conte seu objetivo como professor dentro da plataforma"
+                      {...register('objective')}
+                    />
+                    {errors.objective?.message && (
+                      <p className="text-xs text-destructive">
+                        {errors.objective.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="experience">
+                      Experiência e diferenciais
+                    </Label>
+                    <textarea
+                      id="experience"
+                      rows={4}
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      placeholder="Descreva sua experiência prática, certificações e resultados"
+                      {...register('experience')}
+                    />
+                    {errors.experience?.message && (
+                      <p className="text-xs text-destructive">
+                        {errors.experience.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="instagram">Instagram (opcional)</Label>
+                      <Input
+                        id="instagram"
+                        placeholder="@seuperfil"
+                        error={errors.instagram?.message}
+                        {...register('instagram')}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="linkedin">LinkedIn (opcional)</Label>
+                      <Input
+                        id="linkedin"
+                        placeholder="linkedin.com/in/"
+                        error={errors.linkedin?.message}
+                        {...register('linkedin')}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="portfolioUrl">Portfólio (opcional)</Label>
+                      <Input
+                        id="portfolioUrl"
+                        placeholder="https://"
+                        error={errors.portfolioUrl?.message}
+                        {...register('portfolioUrl')}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
 
               <div className="space-y-1.5">
                 <Label htmlFor="password">Senha</Label>

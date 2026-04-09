@@ -126,7 +126,29 @@ export async function registerAction(input: SignUpInput) {
       }
     }
 
-    const { name, email, password } = validated.data
+    const {
+      role,
+      name,
+      email,
+      password,
+      birthDate,
+      phone,
+      contactEmail,
+      contactPhone,
+      cpf,
+      educationLevel,
+      focusArea,
+      objective,
+      specialties,
+      experience,
+      yearsTeaching,
+      city,
+      state,
+      availability,
+      instagram,
+      linkedin,
+      portfolioUrl,
+    } = validated.data
     const normalizedEmail = email.toLowerCase().trim()
 
     const existing = await prisma.user.findUnique({
@@ -149,6 +171,7 @@ export async function registerAction(input: SignUpInput) {
           name: name.trim(),
           email: normalizedEmail,
           password: hashedPassword,
+          // A candidatura de professor só vira role PROFESSOR após aprovação no ADMIN.
           role: 'STUDENT',
         },
         select: {
@@ -171,6 +194,61 @@ export async function registerAction(input: SignUpInput) {
           fitnessLevel: 'iniciante',
         },
       })
+
+      if (role === 'PROFESSOR') {
+        await tx.professorProfile.upsert({
+          where: { userId: createdUser.id },
+          update: {
+            applicationSubmittedAt: new Date(),
+            applicationStatus: 'PENDING',
+            rejectionReason: null,
+            fullName: name.trim(),
+            birthDate: birthDate ? new Date(birthDate) : null,
+            phone: phone || null,
+            contactEmail: contactEmail || normalizedEmail,
+            contactPhone: contactPhone || null,
+            cpf: cpf || null,
+            educationLevel: educationLevel || null,
+            focusArea: focusArea || null,
+            teachingObjective: objective || null,
+            specialtiesDetailed: specialties || [],
+            teachingExperience: experience || null,
+            yearsTeaching: yearsTeaching ?? null,
+            city: city || null,
+            state: state || null,
+            availability: availability || null,
+            instagram: instagram || null,
+            linkedin: linkedin || null,
+            portfolioUrl: portfolioUrl || null,
+            isApproved: false,
+          },
+          create: {
+            userId: createdUser.id,
+            applicationSubmittedAt: new Date(),
+            applicationStatus: 'PENDING',
+            fullName: name.trim(),
+            birthDate: birthDate ? new Date(birthDate) : null,
+            phone: phone || null,
+            contactEmail: contactEmail || normalizedEmail,
+            contactPhone: contactPhone || null,
+            cpf: cpf || null,
+            educationLevel: educationLevel || null,
+            focusArea: focusArea || null,
+            teachingObjective: objective || null,
+            specialtiesDetailed: specialties || [],
+            teachingExperience: experience || null,
+            yearsTeaching: yearsTeaching ?? null,
+            city: city || null,
+            state: state || null,
+            availability: availability || null,
+            instagram: instagram || null,
+            linkedin: linkedin || null,
+            portfolioUrl: portfolioUrl || null,
+            certifications: [],
+            isApproved: false,
+          },
+        })
+      }
     })
 
     const verificationSendResult = await sendVerificationEmail(normalizedEmail)

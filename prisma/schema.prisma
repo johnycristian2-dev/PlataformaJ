@@ -324,6 +324,28 @@ model ProfessorProfile {
   platformName    String? // Nome da plataforma do professor
   platformSlug    String?  @unique // ex: "mestre-silva", "coach-fitness"
   niche           String? // ex: "muaythai", "fitness", "nutrition"
+  // Questionário de candidatura para aprovação no painel ADMIN
+  applicationSubmittedAt DateTime?
+  applicationStatus      String?  // PENDING | APPROVED | REJECTED
+  rejectionReason        String?  @db.Text
+  fullName               String?
+  birthDate              DateTime?
+  phone                  String?
+  contactEmail           String?
+  contactPhone           String?
+  cpf                    String?
+  educationLevel         String?
+  focusArea              String?
+  teachingObjective      String?  @db.Text
+  specialtiesDetailed    String[]
+  teachingExperience     String?  @db.Text
+  yearsTeaching          Int?
+  city                   String?
+  state                  String?
+  availability           String?
+  instagram              String?
+  linkedin               String?
+  portfolioUrl           String?
   isApproved      Boolean  @default(false)
   totalStudents   Int      @default(0)
   createdAt       DateTime @default(now())

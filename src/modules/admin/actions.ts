@@ -3,6 +3,12 @@
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { createAuditLog } from '@/lib/audit'
+import { APP_URL, ROUTES } from '@/lib/constants'
+import {
+  buildProfessorApplicationApprovedHtml,
+  buildProfessorApplicationRejectedHtml,
+  sendEmail,
+} from '@/lib/email'
 import { requireAdminUser } from '@/modules/_shared/guards'
 import type { Role, SubscriptionStatus } from '@prisma/client'
 
@@ -244,10 +250,40 @@ export async function setProfessorApprovalByAdminAction(formData: FormData) {
       }
     }
 
+    const currentProfile = await prisma.professorProfile.findUnique({
+      where: { id: professorProfileId },
+      select: {
+        id: true,
+        userId: true,
+        isApproved: true,
+        applicationStatus: true,
+        contactEmail: true,
+        user: {
+          select: {
+            email: true,
+            name: true,
+          },
+        },
+      },
+    })
+
+    if (!currentProfile) {
+      return { success: false, error: 'Perfil de professor não encontrado' }
+    }
+
     await prisma.$transaction(async (tx) => {
       await tx.professorProfile.update({
         where: { id: professorProfileId },
-        data: { isApproved: approved },
+        data: {
+          isApproved: approved,
+          applicationStatus: approved ? 'APPROVED' : 'REJECTED',
+          rejectionReason: approved ? null : reasonRaw,
+        },
+      })
+
+      await tx.user.update({
+        where: { id: currentProfile.userId },
+        data: { role: approved ? 'PROFESSOR' : 'STUDENT' },
       })
 
       await tx.professorApprovalDecision.create({
@@ -260,8 +296,59 @@ export async function setProfessorApprovalByAdminAction(formData: FormData) {
       })
     })
 
+    await createAuditLog({
+      actorId: admin.id,
+      actorRole: admin.role,
+      action: approved ? 'PROFESSOR_APPROVED' : 'PROFESSOR_REJECTED',
+      targetType: 'ProfessorProfile',
+      targetId: professorProfileId,
+      before: {
+        isApproved: currentProfile.isApproved,
+        applicationStatus: currentProfile.applicationStatus,
+      },
+      after: {
+        isApproved: approved,
+        applicationStatus: approved ? 'APPROVED' : 'REJECTED',
+      },
+      metadata: {
+        reason: reasonRaw || null,
+      },
+    })
+
+    const recipientEmail =
+      currentProfile.contactEmail || currentProfile.user.email
+    const recipientName = currentProfile.user.name || currentProfile.user.email
+
+    const emailHtml = approved
+      ? buildProfessorApplicationApprovedHtml({
+          userName: recipientName,
+          dashboardUrl: `${APP_URL}${ROUTES.PROFESSOR.DASHBOARD}`,
+        })
+      : buildProfessorApplicationRejectedHtml({
+          userName: recipientName,
+          reason: reasonRaw || null,
+          reapplyUrl: `${APP_URL}${ROUTES.REGISTER}?role=professor`,
+        })
+
+    const emailResult = await sendEmail({
+      to: recipientEmail,
+      subject: approved
+        ? 'Sua candidatura de professor foi aprovada'
+        : 'Atualização da sua candidatura de professor',
+      html: emailHtml,
+    })
+
+    if (!emailResult.success) {
+      console.warn(
+        '[setProfessorApprovalByAdminAction] email not sent',
+        emailResult.error,
+      )
+    }
+
     revalidatePath('/admin/dashboard')
     revalidatePath('/admin/users')
+    revalidatePath('/admin/professors')
+    revalidatePath('/professor/dashboard')
 
     return { success: true }
   } catch (error) {
