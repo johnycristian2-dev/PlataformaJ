@@ -357,11 +357,17 @@ export async function loginAction(
 
   const normalizedEmail = validated.data.email.toLowerCase().trim()
   const clientIp = await getRequestIpIdentifier()
-  const userForRedirect = await prisma.user.findUnique({
+  const userForLogin = await prisma.user.findUnique({
     where: { email: normalizedEmail },
-    select: { id: true, role: true },
+    select: {
+      id: true,
+      role: true,
+      isActive: true,
+      emailVerified: true,
+      password: true,
+    },
   })
-  const userId = userForRedirect?.id ?? null
+  const userId = userForLogin?.id ?? null
 
   if (clientIp) {
     const ipLimit = await consumeRateLimit({
@@ -438,15 +444,114 @@ export async function loginAction(
     }
   }
 
+  if (!userForLogin) {
+    await recordAuthFailure({
+      action: 'LOGIN',
+      channel: 'EMAIL',
+      identifier: normalizedEmail,
+      userId: null,
+      errorCode: 'INVALID_CREDENTIALS',
+    })
+
+    if (clientIp) {
+      await recordAuthFailure({
+        action: 'LOGIN',
+        channel: 'IP',
+        identifier: clientIp,
+        userId: null,
+        errorCode: 'INVALID_CREDENTIALS',
+      })
+    }
+
+    return {
+      success: false,
+      error: 'Email ou senha inválidos',
+    }
+  }
+
+  if (!userForLogin.isActive) {
+    await recordAuthFailure({
+      action: 'LOGIN',
+      channel: 'EMAIL',
+      identifier: normalizedEmail,
+      userId,
+      errorCode: 'ACCOUNT_INACTIVE',
+    })
+
+    if (clientIp) {
+      await recordAuthFailure({
+        action: 'LOGIN',
+        channel: 'IP',
+        identifier: clientIp,
+        userId,
+        errorCode: 'ACCOUNT_INACTIVE',
+      })
+    }
+
+    return {
+      success: false,
+      error: 'Sua conta está desativada. Fale com o suporte.',
+    }
+  }
+
+  if (!userForLogin.emailVerified) {
+    await recordAuthFailure({
+      action: 'LOGIN',
+      channel: 'EMAIL',
+      identifier: normalizedEmail,
+      userId,
+      errorCode: 'EMAIL_NOT_VERIFIED',
+    })
+
+    if (clientIp) {
+      await recordAuthFailure({
+        action: 'LOGIN',
+        channel: 'IP',
+        identifier: clientIp,
+        userId,
+        errorCode: 'EMAIL_NOT_VERIFIED',
+      })
+    }
+
+    return {
+      success: false,
+      errorCode: 'EMAIL_NOT_VERIFIED',
+      error:
+        'Seu email ainda não foi verificado. Confirme o email para fazer login.',
+    }
+  }
+
+  if (!userForLogin.password) {
+    await recordAuthFailure({
+      action: 'LOGIN',
+      channel: 'EMAIL',
+      identifier: normalizedEmail,
+      userId,
+      errorCode: 'PASSWORD_NOT_SET',
+    })
+
+    if (clientIp) {
+      await recordAuthFailure({
+        action: 'LOGIN',
+        channel: 'IP',
+        identifier: clientIp,
+        userId,
+        errorCode: 'PASSWORD_NOT_SET',
+      })
+    }
+
+    return {
+      success: false,
+      error:
+        'Esta conta não possui senha de acesso. Use o provedor social ou redefina sua senha.',
+    }
+  }
+
   try {
     const safeCallback = input.callbackUrl?.startsWith('/')
       ? input.callbackUrl
       : null
-    const redirectTo =
-      safeCallback ??
-      (userForRedirect
-        ? getDashboardRoute(userForRedirect.role)
-        : ROUTES.STUDENT.DASHBOARD)
+    const redirectTo = safeCallback ?? getDashboardRoute(userForLogin.role)
 
     await signIn('credentials', {
       email: normalizedEmail,

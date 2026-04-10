@@ -16,7 +16,10 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card'
-import { loginAction } from '@/modules/auth/actions'
+import {
+  loginAction,
+  resendVerificationEmailAction,
+} from '@/modules/auth/actions'
 import { SignInSchema, type SignInInput } from '@/lib/validations'
 
 function LoginForm() {
@@ -24,6 +27,12 @@ function LoginForm() {
   const callbackUrl = searchParams.get('callbackUrl') ?? undefined
   const verified = searchParams.get('verified') === '1'
   const [showPw, setShowPw] = useState(false)
+  const [loginErrorCode, setLoginErrorCode] = useState<string | null>(null)
+  const [lastSubmittedEmail, setLastSubmittedEmail] = useState<string>('')
+  const [resendStatus, setResendStatus] = useState<
+    'idle' | 'sending' | 'sent' | 'error'
+  >('idle')
+  const [resendMessage, setResendMessage] = useState('')
 
   const {
     register,
@@ -35,8 +44,16 @@ function LoginForm() {
   })
 
   async function onSubmit(data: SignInInput) {
+    setLastSubmittedEmail(data.email)
+    setLoginErrorCode(null)
+    setResendStatus('idle')
+    setResendMessage('')
+
     const result = await loginAction({ ...data, callbackUrl })
     if (result && !result.success) {
+      setLoginErrorCode(
+        'errorCode' in result ? (result.errorCode ?? null) : null,
+      )
       setError('root', {
         message:
           result.error === 'CredentialsSignin'
@@ -45,6 +62,27 @@ function LoginForm() {
       })
     }
     // Em caso de sucesso loginAction lança NEXT_REDIRECT — navegação automática
+  }
+
+  async function handleResendVerification() {
+    if (!lastSubmittedEmail || resendStatus === 'sending') return
+
+    setResendStatus('sending')
+    setResendMessage('')
+
+    const result = await resendVerificationEmailAction(lastSubmittedEmail)
+    if (result?.success === false) {
+      setResendStatus('error')
+      setResendMessage(
+        result.error ?? 'Não foi possível reenviar o link agora.',
+      )
+      return
+    }
+
+    setResendStatus('sent')
+    setResendMessage(
+      result?.message ?? 'Link reenviado. Verifique sua caixa de entrada.',
+    )
   }
 
   return (
@@ -67,6 +105,36 @@ function LoginForm() {
           {errors.root && (
             <div className="rounded-md bg-destructive/10 border border-destructive/30 px-4 py-3 text-sm text-destructive">
               {errors.root.message}
+            </div>
+          )}
+
+          {loginErrorCode === 'EMAIL_NOT_VERIFIED' && (
+            <div className="rounded-md border border-primary/30 bg-primary/10 px-4 py-3 space-y-2">
+              <p className="text-sm text-foreground">
+                Seu email ainda não foi verificado. Reenviamos o link para você.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={handleResendVerification}
+                disabled={resendStatus === 'sending'}
+              >
+                {resendStatus === 'sending'
+                  ? 'Reenviando...'
+                  : 'Reenviar link de verificação'}
+              </Button>
+              {resendMessage && (
+                <p
+                  className={`text-xs ${
+                    resendStatus === 'error'
+                      ? 'text-destructive'
+                      : 'text-foreground'
+                  }`}
+                >
+                  {resendMessage}
+                </p>
+              )}
             </div>
           )}
 

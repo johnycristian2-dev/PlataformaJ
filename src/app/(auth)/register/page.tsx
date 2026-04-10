@@ -27,7 +27,8 @@ const PW_RULES = [
 
 export default function RegisterPage() {
   const searchParams = useSearchParams()
-  const isProfessorFlow = searchParams.get('role') === 'professor'
+  const roleParam = searchParams.get('role')?.toLowerCase().trim()
+  const isProfessorFlow = roleParam === 'professor' || roleParam === 'teacher'
   const [showPw, setShowPw] = useState(false)
   const [showConfirmPw, setShowConfirmPw] = useState(false)
   const [specialtiesText, setSpecialtiesText] = useState('')
