@@ -4,6 +4,8 @@ import { prisma } from '@/lib/prisma'
 import type { ProfessorProfile } from '@prisma/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { setProfessorApprovalByAdminAction } from '@/modules/admin/actions'
 import { formatDate } from '@/lib/utils'
 
 type ProfessorListItem = ProfessorProfile & {
@@ -18,6 +20,12 @@ type ProfessorListItem = ProfessorProfile & {
 export default async function AdminProfessorsPage() {
   const session = await auth()
   if (!session?.user?.id || session.user.role !== 'ADMIN') redirect('/login')
+
+  async function setProfessorApproval(formData: FormData) {
+    'use server'
+
+    await setProfessorApprovalByAdminAction(formData)
+  }
 
   let professors: ProfessorListItem[] = []
   try {
@@ -153,6 +161,45 @@ export default async function AdminProfessorsPage() {
                     Último motivo de rejeição: {prof.rejectionReason}
                   </p>
                 )}
+
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  {!prof.isApproved && (
+                    <form action={setProfessorApproval}>
+                      <input
+                        type="hidden"
+                        name="professorProfileId"
+                        value={prof.id}
+                      />
+                      <input type="hidden" name="approved" value="true" />
+                      <Button type="submit" size="sm">
+                        Aprovar professor
+                      </Button>
+                    </form>
+                  )}
+
+                  <form
+                    action={setProfessorApproval}
+                    className="flex flex-wrap items-center gap-2"
+                  >
+                    <input
+                      type="hidden"
+                      name="professorProfileId"
+                      value={prof.id}
+                    />
+                    <input type="hidden" name="approved" value="false" />
+                    <input
+                      type="text"
+                      name="reason"
+                      required
+                      minLength={10}
+                      placeholder="Motivo da rejeição (mínimo 10 caracteres)"
+                      className="h-8 w-[280px] rounded-md border border-input bg-background px-2 text-xs"
+                    />
+                    <Button type="submit" size="sm" variant="destructive">
+                      Rejeitar candidatura
+                    </Button>
+                  </form>
+                </div>
               </div>
             ))
           )}

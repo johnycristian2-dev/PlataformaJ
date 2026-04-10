@@ -39,8 +39,12 @@ export async function updateUserRoleByAdminAction(formData: FormData) {
 
     const currentUser = await prisma.user.findUnique({
       where: { id: userId },
-      select: { role: true },
+      select: { role: true, name: true, email: true },
     })
+
+    if (!currentUser) {
+      return { success: false, error: 'Usuário não encontrado' }
+    }
 
     await prisma.$transaction(async (tx) => {
       await tx.user.update({
@@ -54,8 +58,20 @@ export async function updateUserRoleByAdminAction(formData: FormData) {
           create: {
             userId,
             certifications: [],
+            specialtiesDetailed: [],
+            fullName: currentUser.name ?? null,
+            contactEmail: currentUser.email,
+            applicationStatus: 'APPROVED',
+            applicationSubmittedAt: new Date(),
+            isApproved: true,
           },
-          update: {},
+          update: {
+            contactEmail: currentUser.email,
+            fullName: currentUser.name ?? undefined,
+            applicationStatus: 'APPROVED',
+            rejectionReason: null,
+            isApproved: true,
+          },
         })
       }
 
@@ -64,8 +80,17 @@ export async function updateUserRoleByAdminAction(formData: FormData) {
           where: { userId },
           create: {
             userId,
+            fitnessLevel: 'iniciante',
           },
           update: {},
+        })
+
+        await tx.professorProfile.updateMany({
+          where: { userId },
+          data: {
+            isApproved: false,
+            applicationStatus: 'REJECTED',
+          },
         })
       }
     })
@@ -81,7 +106,9 @@ export async function updateUserRoleByAdminAction(formData: FormData) {
     })
 
     revalidatePath('/admin/users')
+  revalidatePath('/admin/professors')
     revalidatePath('/admin/dashboard')
+  revalidateTag('users')
 
     return { success: true }
   } catch (error) {
