@@ -30,9 +30,25 @@ export default async function AdminProfessorsPage() {
               isActive: true,
             },
           })
-          return { ...prof, user: user || { name: null, email: 'N/A', createdAt: new Date(), isActive: false } }
+          return {
+            ...prof,
+            user: user || {
+              name: null,
+              email: 'N/A',
+              createdAt: new Date(),
+              isActive: false,
+            },
+          }
         } catch {
-          return { ...prof, user: { name: null, email: 'N/A', createdAt: new Date(), isActive: false } }
+          return {
+            ...prof,
+            user: {
+              name: null,
+              email: 'N/A',
+              createdAt: new Date(),
+              isActive: false,
+            },
+          }
         }
       }),
     )

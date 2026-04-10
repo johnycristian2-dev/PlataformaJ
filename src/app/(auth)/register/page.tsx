@@ -149,7 +149,8 @@ export default function RegisterPage() {
                     ✓ Formulário de Candidatura
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Preencha todos os campos abaixo. Sua candidatura será analisada pela equipe admin.
+                    Preencha todos os campos abaixo. Sua candidatura será
+                    analisada pela equipe admin.
                   </p>
                 </div>
               )}
