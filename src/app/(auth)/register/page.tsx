@@ -116,8 +116,14 @@ export default function RegisterPage() {
 
         <Card>
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Criar conta</CardTitle>
-            <CardDescription>Comece sua jornada hoje mesmo</CardDescription>
+            <CardTitle className="text-2xl">
+              {isProfessorFlow ? 'Candidatura de Professor' : 'Criar conta'}
+            </CardTitle>
+            <CardDescription>
+              {isProfessorFlow
+                ? 'Responda o questionário para análise de aprovação'
+                : 'Comece sua jornada hoje mesmo'}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <form
@@ -138,12 +144,12 @@ export default function RegisterPage() {
               )}
 
               {isProfessorFlow && (
-                <div className="rounded-md border border-primary/25 bg-primary/5 px-4 py-3 text-sm">
-                  <p className="font-medium text-foreground">
-                    Candidatura de Professor
+                <div className="rounded-lg border-2 border-primary bg-primary/15 px-4 py-3 space-y-1.5">
+                  <p className="font-bold text-foreground text-sm">
+                    ✓ Formulário de Candidatura
                   </p>
-                  <p className="text-muted-foreground mt-1">
-                    Preencha o questionário para análise no painel ADMIN.
+                  <p className="text-xs text-muted-foreground">
+                    Preencha todos os campos abaixo. Sua candidatura será analisada pela equipe admin.
                   </p>
                 </div>
               )}
@@ -482,7 +488,7 @@ export default function RegisterPage() {
                 className="w-full"
                 loading={isSubmitting}
               >
-                Criar conta
+                {isProfessorFlow ? 'Enviar Candidatura' : 'Criar conta'}
               </Button>
             </form>
 
