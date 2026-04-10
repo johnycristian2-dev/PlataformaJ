@@ -9,20 +9,37 @@ export default async function AdminProfessorsPage() {
   const session = await auth()
   if (!session?.user?.id || session.user.role !== 'ADMIN') redirect('/login')
 
-  const professors = await prisma.professorProfile.findMany({
-    include: {
-      user: {
-        select: {
-          name: true,
-          email: true,
-          createdAt: true,
-          isActive: true,
-        },
-      },
-    },
-    orderBy: { createdAt: 'desc' },
-    take: 80,
-  })
+  let professors: any[] = []
+  try {
+    // Primeiro tenta sem include para debug
+    const rawProfs = await prisma.professorProfile.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 80,
+    })
+
+    // Depois enricha com user data
+    professors = await Promise.all(
+      rawProfs.map(async (prof) => {
+        try {
+          const user = await prisma.user.findUnique({
+            where: { id: prof.userId },
+            select: {
+              name: true,
+              email: true,
+              createdAt: true,
+              isActive: true,
+            },
+          })
+          return { ...prof, user: user || { name: null, email: 'N/A', createdAt: new Date(), isActive: false } }
+        } catch {
+          return { ...prof, user: { name: null, email: 'N/A', createdAt: new Date(), isActive: false } }
+        }
+      }),
+    )
+  } catch (error) {
+    console.error('[AdminProfessorsPage] database error:', error)
+    throw error
+  }
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-8">
