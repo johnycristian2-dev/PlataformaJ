@@ -1,15 +1,25 @@
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
+import type { ProfessorProfile } from '@prisma/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { formatDate } from '@/lib/utils'
+
+type ProfessorListItem = ProfessorProfile & {
+  user: {
+    name: string | null
+    email: string
+    createdAt: Date
+    isActive: boolean
+  }
+}
 
 export default async function AdminProfessorsPage() {
   const session = await auth()
   if (!session?.user?.id || session.user.role !== 'ADMIN') redirect('/login')
 
-  let professors: any[] = []
+  let professors: ProfessorListItem[] = []
   try {
     // Primeiro tenta sem include para debug
     const rawProfs = await prisma.professorProfile.findMany({
