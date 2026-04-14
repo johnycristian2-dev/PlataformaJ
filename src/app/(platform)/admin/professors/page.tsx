@@ -1,14 +1,16 @@
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
-import type { ProfessorProfile } from '@prisma/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { setProfessorApprovalByAdminAction } from '@/modules/admin/actions'
 import { formatDate } from '@/lib/utils'
 
-type ProfessorListItem = ProfessorProfile & {
+type ProfessorListItem = {
+  id: string
+  isApproved: boolean
+  createdAt: Date
   user: {
     name: string | null
     email: string
@@ -27,11 +29,15 @@ export default async function AdminProfessorsPage() {
   }
 
   let professors: ProfessorListItem[] = []
+  let loadError = false
   try {
-    const rawProfs = await prisma.professorProfile.findMany({
+    professors = await prisma.professorProfile.findMany({
       orderBy: { createdAt: 'desc' },
       take: 80,
-      include: {
+      select: {
+        id: true,
+        isApproved: true,
+        createdAt: true,
         user: {
           select: {
             name: true,
@@ -42,13 +48,9 @@ export default async function AdminProfessorsPage() {
         },
       },
     })
-    professors = rawProfs.map(({ user, ...prof }) => ({
-      ...prof,
-      user,
-    }))
   } catch (error) {
     console.error('[AdminProfessorsPage] database error:', error)
-    throw error
+    loadError = true
   }
 
   return (
@@ -67,9 +69,17 @@ export default async function AdminProfessorsPage() {
           <CardTitle className="text-base">Lista de professores</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
+          {loadError && (
+            <p className="text-sm text-destructive">
+              Nao foi possivel carregar os professores agora. Tente novamente em alguns instantes.
+            </p>
+          )}
+
           {professors.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">
-              Nenhum professor encontrado.
+              {loadError
+                ? 'Sem dados para exibir no momento.'
+                : 'Nenhum professor encontrado.'}
             </p>
           ) : (
             professors.map((prof) => (
@@ -100,43 +110,6 @@ export default async function AdminProfessorsPage() {
                 <p className="text-xs text-muted-foreground mt-2">
                   Criado em {formatDate(prof.user.createdAt)}
                 </p>
-
-                {prof.applicationSubmittedAt && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Candidatura enviada em{' '}
-                    {formatDate(prof.applicationSubmittedAt)}
-                  </p>
-                )}
-
-                <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-muted-foreground">
-                  <p>
-                    <span className="font-medium text-foreground">Status:</span>{' '}
-                    {prof.applicationStatus ??
-                      (prof.isApproved ? 'APPROVED' : 'PENDING')}
-                  </p>
-                  <p>
-                    <span className="font-medium text-foreground">Foco:</span>{' '}
-                    {prof.focusArea ?? 'Não informado'}
-                  </p>
-                  <p>
-                    <span className="font-medium text-foreground">
-                      Escolaridade:
-                    </span>{' '}
-                    {prof.educationLevel ?? 'Não informado'}
-                  </p>
-                  <p>
-                    <span className="font-medium text-foreground">
-                      Contato:
-                    </span>{' '}
-                    {prof.contactPhone ?? prof.phone ?? prof.user.email}
-                  </p>
-                </div>
-
-                {prof.rejectionReason && (
-                  <p className="text-xs text-destructive mt-2">
-                    Último motivo de rejeição: {prof.rejectionReason}
-                  </p>
-                )}
 
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   {!prof.isApproved && (

@@ -87,34 +87,28 @@ export const SignUpSchema = z
       .string()
       .max(1200, { message: 'Objetivo muito longo' })
       .optional(),
-    specialties: z.preprocess(
-      (value) => {
-        if (!Array.isArray(value)) return value
-        const filtered = value
-          .map((item) => (typeof item === 'string' ? item.trim() : item))
-          .filter((item) => typeof item === 'string' && item.length > 0)
-        return filtered.length > 0 ? filtered : undefined
-      },
-      z.array(z.string().trim()).max(12).optional(),
-    ),
+    specialties: z.preprocess((value) => {
+      if (!Array.isArray(value)) return value
+      const filtered = value
+        .map((item) => (typeof item === 'string' ? item.trim() : item))
+        .filter((item) => typeof item === 'string' && item.length > 0)
+      return filtered.length > 0 ? filtered : undefined
+    }, z.array(z.string().trim()).max(12).optional()),
     experience: z
       .string()
       .max(1600, { message: 'Descrição de experiência muito longa' })
       .optional(),
-    yearsTeaching: z.preprocess(
-      (value) => {
-        if (value === undefined || value === null || value === '') {
-          return undefined
-        }
+    yearsTeaching: z.preprocess((value) => {
+      if (value === undefined || value === null || value === '') {
+        return undefined
+      }
 
-        if (typeof value === 'number' && Number.isNaN(value)) {
-          return undefined
-        }
+      if (typeof value === 'number' && Number.isNaN(value)) {
+        return undefined
+      }
 
-        return value
-      },
-      z.coerce.number().int().min(0).max(60).optional(),
-    ),
+      return value
+    }, z.coerce.number().int().min(0).max(60).optional()),
     city: z.preprocess(emptyToUndefined, z.string().max(80).optional()),
     state: z.preprocess(emptyToUndefined, z.string().max(80).optional()),
     availability: z.preprocess(
