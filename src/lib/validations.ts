@@ -1,5 +1,13 @@
 import { z } from 'zod'
 
+function emptyToUndefined(value: unknown) {
+  if (typeof value === 'string' && value.trim() === '') {
+    return undefined
+  }
+
+  return value
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // AUTH
 // ─────────────────────────────────────────────────────────────────────────────
@@ -38,43 +46,90 @@ export const SignUpSchema = z
     confirmPassword: z.string({
       required_error: 'Confirmação de senha é obrigatória',
     }),
-    birthDate: z.string().optional(),
-    phone: z.string().max(20, { message: 'Telefone inválido' }).optional(),
-    contactEmail: z
-      .string()
-      .email({ message: 'E-mail de contato inválido' })
-      .toLowerCase()
-      .trim()
-      .optional(),
-    contactPhone: z
-      .string()
-      .max(20, { message: 'Telefone para contato inválido' })
-      .optional(),
-    cpf: z
-      .string()
-      .regex(/^\d{11}$/, { message: 'CPF deve conter 11 dígitos numéricos' })
-      .optional(),
-    educationLevel: z.string().max(80).optional(),
-    focusArea: z.string().max(120).optional(),
+    birthDate: z.preprocess(emptyToUndefined, z.string().optional()),
+    phone: z.preprocess(
+      emptyToUndefined,
+      z.string().max(20, { message: 'Telefone inválido' }).optional(),
+    ),
+    contactEmail: z.preprocess(
+      emptyToUndefined,
+      z
+        .string()
+        .email({ message: 'E-mail de contato inválido' })
+        .toLowerCase()
+        .trim()
+        .optional(),
+    ),
+    contactPhone: z.preprocess(
+      emptyToUndefined,
+      z
+        .string()
+        .max(20, { message: 'Telefone para contato inválido' })
+        .optional(),
+    ),
+    cpf: z.preprocess(
+      (value) => {
+        if (typeof value !== 'string') return value
+        const digits = value.replace(/\D/g, '')
+        return digits === '' ? undefined : digits
+      },
+      z
+        .string()
+        .regex(/^\d{11}$/, { message: 'CPF deve conter 11 dígitos numéricos' })
+        .optional(),
+    ),
+    educationLevel: z.preprocess(
+      emptyToUndefined,
+      z.string().max(80).optional(),
+    ),
+    focusArea: z.preprocess(emptyToUndefined, z.string().max(120).optional()),
     objective: z
       .string()
       .max(1200, { message: 'Objetivo muito longo' })
       .optional(),
-    specialties: z.array(z.string().trim()).max(12).optional(),
+    specialties: z.preprocess(
+      (value) => {
+        if (!Array.isArray(value)) return value
+        const filtered = value
+          .map((item) => (typeof item === 'string' ? item.trim() : item))
+          .filter((item) => typeof item === 'string' && item.length > 0)
+        return filtered.length > 0 ? filtered : undefined
+      },
+      z.array(z.string().trim()).max(12).optional(),
+    ),
     experience: z
       .string()
       .max(1600, { message: 'Descrição de experiência muito longa' })
       .optional(),
-    yearsTeaching: z.coerce.number().int().min(0).max(60).optional(),
-    city: z.string().max(80).optional(),
-    state: z.string().max(80).optional(),
-    availability: z.string().max(120).optional(),
-    instagram: z.string().max(120).optional(),
-    linkedin: z.string().max(180).optional(),
-    portfolioUrl: z
-      .string()
-      .url({ message: 'Portfólio deve ser uma URL válida' })
-      .optional(),
+    yearsTeaching: z.preprocess(
+      (value) => {
+        if (value === undefined || value === null || value === '') {
+          return undefined
+        }
+
+        if (typeof value === 'number' && Number.isNaN(value)) {
+          return undefined
+        }
+
+        return value
+      },
+      z.coerce.number().int().min(0).max(60).optional(),
+    ),
+    city: z.preprocess(emptyToUndefined, z.string().max(80).optional()),
+    state: z.preprocess(emptyToUndefined, z.string().max(80).optional()),
+    availability: z.preprocess(
+      emptyToUndefined,
+      z.string().max(120).optional(),
+    ),
+    instagram: z.preprocess(emptyToUndefined, z.string().max(120).optional()),
+    linkedin: z.preprocess(emptyToUndefined, z.string().max(180).optional()),
+    portfolioUrl: z.preprocess(
+      emptyToUndefined,
+      z
+        .string()
+        .url({ message: 'Portfólio deve ser uma URL válida' })
+        .optional(),
+    ),
   })
   .superRefine((data, ctx) => {
     if (data.password !== data.confirmPassword) {

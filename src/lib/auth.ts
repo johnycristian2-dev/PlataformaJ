@@ -20,7 +20,9 @@ function maskEmail(email?: string | null) {
   return `${safeLocal}@${domain}`
 }
 
-const trustHostEnabled = process.env.AUTH_TRUST_HOST === 'true'
+const trustHostEnabled =
+  process.env.AUTH_TRUST_HOST === 'true' ||
+  process.env.NODE_ENV !== 'production'
 
 export const { auth, handlers, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),

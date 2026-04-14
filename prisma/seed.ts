@@ -29,6 +29,7 @@ async function main() {
   // 1. HASH DE SENHAS
   // ─────────────────────────────────────────────────────────────────────────────
   const SALT_ROUNDS = 12
+  const verifiedAt = new Date()
   const hashAdmin = await bcrypt.hash('Admin@123456', SALT_ROUNDS)
   const hashProf = await bcrypt.hash('Prof@123456', SALT_ROUNDS)
   const hashStudent = await bcrypt.hash('Student@123456', SALT_ROUNDS)
@@ -38,9 +39,10 @@ async function main() {
   // ─────────────────────────────────────────────────────────────────────────────
   const admin = await prisma.user.upsert({
     where: { email: 'johnycristian2@gmail.com' },
-    update: {},
+    update: { emailVerified: verifiedAt, isActive: true },
     create: {
       email: 'johnycristian2@gmail.com',
+      emailVerified: verifiedAt,
       name: 'Administrador Sistema',
       password: hashAdmin,
       role: Role.ADMIN,
@@ -69,9 +71,10 @@ async function main() {
   // Professor 1 — Muay Thai
   const profMuay = await prisma.user.upsert({
     where: { email: 'mestre.silva@muaythai.com' },
-    update: {},
+    update: { emailVerified: verifiedAt, isActive: true },
     create: {
       email: 'mestre.silva@muaythai.com',
+      emailVerified: verifiedAt,
       name: 'Mestre Ricardo Silva',
       password: hashProf,
       role: Role.PROFESSOR,
@@ -138,9 +141,10 @@ async function main() {
   // Professor 2 — Fitness
   const profFitness = await prisma.user.upsert({
     where: { email: 'coach.thiago@academiaelite.com' },
-    update: {},
+    update: { emailVerified: verifiedAt, isActive: true },
     create: {
       email: 'coach.thiago@academiaelite.com',
+      emailVerified: verifiedAt,
       name: 'Coach Thiago Martins',
       password: hashProf,
       role: Role.PROFESSOR,
@@ -250,9 +254,10 @@ async function main() {
   for (const s of studentsData) {
     const student = await prisma.user.upsert({
       where: { email: s.email },
-      update: {},
+      update: { emailVerified: verifiedAt, isActive: true },
       create: {
         email: s.email,
+        emailVerified: verifiedAt,
         name: s.name,
         password: hashStudent,
         role: Role.STUDENT,

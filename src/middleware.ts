@@ -33,6 +33,10 @@ export default auth(function middleware(req: MiddlewareAuthRequest) {
   const isLoggedIn = !!session?.user
   const role: string = session?.user?.role ?? ''
   const pathname = nextUrl.pathname
+  const roleParam = nextUrl.searchParams.get('role')?.toLowerCase().trim()
+  const wantsProfessorApplication =
+    pathname.startsWith('/register') &&
+    (roleParam === 'professor' || roleParam === 'teacher')
 
   // ── Rotas de autenticação ─────────────────────────────────────────────────
   const isAuthRoute =
@@ -42,6 +46,11 @@ export default auth(function middleware(req: MiddlewareAuthRequest) {
     pathname.startsWith('/reset-password')
 
   if (isAuthRoute) {
+    // Aluno logado pode abrir o fluxo de candidatura em /register?role=professor
+    if (isLoggedIn && wantsProfessorApplication && role === 'STUDENT') {
+      return NextResponse.next()
+    }
+
     // Usuário já autenticado → redireciona para o dashboard correto
     if (isLoggedIn) {
       return NextResponse.redirect(new URL(dashboardForRole(role), nextUrl))

@@ -153,10 +153,89 @@ export async function registerAction(input: SignUpInput) {
 
     const existing = await prisma.user.findUnique({
       where: { email: normalizedEmail },
-      select: { id: true },
+      select: {
+        id: true,
+        role: true,
+        email: true,
+      },
     })
 
     if (existing) {
+      if (role === 'PROFESSOR' && existing.role === 'STUDENT') {
+        const session = await auth()
+        const sessionEmail = session?.user?.email?.toLowerCase().trim()
+        const isSameUser =
+          session?.user?.id === existing.id || sessionEmail === normalizedEmail
+
+        if (!isSameUser) {
+          return {
+            success: false,
+            error:
+              'Para se candidatar como professor com conta existente, faça login nessa conta de aluno.',
+          }
+        }
+
+        await prisma.professorProfile.upsert({
+          where: { userId: existing.id },
+          update: {
+            applicationSubmittedAt: new Date(),
+            applicationStatus: 'PENDING',
+            rejectionReason: null,
+            fullName: name.trim(),
+            birthDate: birthDate ? new Date(birthDate) : null,
+            phone: phone || null,
+            contactEmail: contactEmail || normalizedEmail,
+            contactPhone: contactPhone || null,
+            cpf: cpf || null,
+            educationLevel: educationLevel || null,
+            focusArea: focusArea || null,
+            teachingObjective: objective || null,
+            specialtiesDetailed: specialties || [],
+            teachingExperience: experience || null,
+            yearsTeaching: yearsTeaching ?? null,
+            city: city || null,
+            state: state || null,
+            availability: availability || null,
+            instagram: instagram || null,
+            linkedin: linkedin || null,
+            portfolioUrl: portfolioUrl || null,
+            isApproved: false,
+          },
+          create: {
+            userId: existing.id,
+            applicationSubmittedAt: new Date(),
+            applicationStatus: 'PENDING',
+            fullName: name.trim(),
+            birthDate: birthDate ? new Date(birthDate) : null,
+            phone: phone || null,
+            contactEmail: contactEmail || normalizedEmail,
+            contactPhone: contactPhone || null,
+            cpf: cpf || null,
+            educationLevel: educationLevel || null,
+            focusArea: focusArea || null,
+            teachingObjective: objective || null,
+            specialtiesDetailed: specialties || [],
+            teachingExperience: experience || null,
+            yearsTeaching: yearsTeaching ?? null,
+            city: city || null,
+            state: state || null,
+            availability: availability || null,
+            instagram: instagram || null,
+            linkedin: linkedin || null,
+            portfolioUrl: portfolioUrl || null,
+            certifications: [],
+            isApproved: false,
+          },
+        })
+
+        revalidatePath('/admin/professors')
+        revalidatePath('/admin/dashboard')
+        revalidatePath('/student/dashboard')
+
+        const { redirect } = await import('next/navigation')
+        redirect('/student/dashboard?application=professor-pending')
+      }
+
       return {
         success: false,
         error: 'Já existe uma conta com este e-mail',

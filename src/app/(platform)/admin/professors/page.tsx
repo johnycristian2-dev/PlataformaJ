@@ -31,42 +31,21 @@ export default async function AdminProfessorsPage() {
     const rawProfs = await prisma.professorProfile.findMany({
       orderBy: { createdAt: 'desc' },
       take: 80,
+      include: {
+        user: {
+          select: {
+            name: true,
+            email: true,
+            createdAt: true,
+            isActive: true,
+          },
+        },
+      },
     })
-
-    professors = await Promise.all(
-      rawProfs.map(async (prof) => {
-        try {
-          const user = await prisma.user.findUnique({
-            where: { id: prof.userId },
-            select: {
-              name: true,
-              email: true,
-              createdAt: true,
-              isActive: true,
-            },
-          })
-          return {
-            ...prof,
-            user: user || {
-              name: null,
-              email: 'N/A',
-              createdAt: new Date(),
-              isActive: false,
-            },
-          }
-        } catch {
-          return {
-            ...prof,
-            user: {
-              name: null,
-              email: 'N/A',
-              createdAt: new Date(),
-              isActive: false,
-            },
-          }
-        }
-      }),
-    )
+    professors = rawProfs.map(({ user, ...prof }) => ({
+      ...prof,
+      user,
+    }))
   } catch (error) {
     console.error('[AdminProfessorsPage] database error:', error)
     throw error
