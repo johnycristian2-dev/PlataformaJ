@@ -14,7 +14,7 @@ type MiddlewareAuthRequest = NextRequest & {
 // HELPER: rota de dashboard por role
 // ─────────────────────────────────────────────────────────────────────────────
 function dashboardForRole(role: string): string {
-  switch (role) {
+  switch (role.toUpperCase()) {
     case 'ADMIN':
       return '/admin/dashboard'
     case 'PROFESSOR':
@@ -31,7 +31,7 @@ export default auth(function middleware(req: MiddlewareAuthRequest) {
   const { nextUrl } = req
   const session = req.auth
   const isLoggedIn = !!session?.user
-  const role: string = session?.user?.role ?? ''
+  const role: string = (session?.user?.role ?? '').toUpperCase()
   const pathname = nextUrl.pathname
   const roleParam = nextUrl.searchParams.get('role')?.toLowerCase().trim()
   const wantsProfessorApplication =
@@ -47,7 +47,12 @@ export default auth(function middleware(req: MiddlewareAuthRequest) {
 
   if (isAuthRoute) {
     // Aluno logado pode abrir o fluxo de candidatura em /register?role=professor
-    if (isLoggedIn && wantsProfessorApplication && role === 'STUDENT') {
+    if (
+      isLoggedIn &&
+      wantsProfessorApplication &&
+      role !== 'ADMIN' &&
+      role !== 'PROFESSOR'
+    ) {
       return NextResponse.next()
     }
 
