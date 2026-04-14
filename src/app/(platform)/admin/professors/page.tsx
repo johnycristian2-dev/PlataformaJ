@@ -21,21 +21,18 @@ export default async function AdminProfessorsPage() {
   const session = await auth()
   if (!session?.user?.id || session.user.role !== 'ADMIN') redirect('/login')
 
-  async function setProfessorApproval(formData: FormData) {
+  async function handleApproval(formData: FormData) {
     'use server'
-
     await setProfessorApprovalByAdminAction(formData)
   }
 
   let professors: ProfessorListItem[] = []
   try {
-    // Primeiro tenta sem include para debug
     const rawProfs = await prisma.professorProfile.findMany({
       orderBy: { createdAt: 'desc' },
       take: 80,
     })
 
-    // Depois enricha com user data
     professors = await Promise.all(
       rawProfs.map(async (prof) => {
         try {
@@ -164,7 +161,7 @@ export default async function AdminProfessorsPage() {
 
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   {!prof.isApproved && (
-                    <form action={setProfessorApproval}>
+                    <form action={handleApproval}>
                       <input
                         type="hidden"
                         name="professorProfileId"
@@ -179,7 +176,7 @@ export default async function AdminProfessorsPage() {
 
                   {!prof.isApproved && (
                     <form
-                      action={setProfessorApproval}
+                      action={handleApproval}
                       className="flex flex-wrap items-center gap-2"
                     >
                       <input
