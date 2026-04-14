@@ -48,6 +48,7 @@ export default async function ProfessorTrainingsPage({
 }: ProfessorTrainingsPageProps) {
   const session = await auth()
   if (!session?.user?.id) redirect('/login')
+  if (session.user.role !== 'PROFESSOR') redirect('/student/dashboard')
 
   const params = await searchParams
   const page = Math.max(1, Number(params.page || 1) || 1)

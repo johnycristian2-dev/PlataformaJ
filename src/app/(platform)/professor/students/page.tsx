@@ -217,9 +217,10 @@ const getProfessorStudentsPage = unstable_cache(
       const droppedFrequency = previousDays >= 2 && recentDays <= 1
       const nearCancel = Boolean(
         latestSubscription &&
-          (['PAST_DUE', 'RECOVERY', 'SUSPENDED'].includes(
-            latestSubscription.status,
-          ) || latestSubscription.dunningStage >= 3),
+        (['PAST_DUE', 'RECOVERY', 'SUSPENDED'].includes(
+          latestSubscription.status,
+        ) ||
+          latestSubscription.dunningStage >= 3),
       )
       const delayedTrack = student.enrollments.some(
         (enrollment) =>
@@ -246,7 +247,11 @@ const getProfessorStudentsPage = unstable_cache(
         segmentMap.BEGINNER.push(student.id)
       }
 
-      if (['avancado', 'avançado', 'advanced'].some((v) => fitnessLevel.includes(v))) {
+      if (
+        ['avancado', 'avançado', 'advanced'].some((v) =>
+          fitnessLevel.includes(v),
+        )
+      ) {
         segmentMap.ADVANCED.push(student.id)
       }
 
@@ -273,7 +278,9 @@ const getProfessorStudentsPage = unstable_cache(
         : null
 
     const filteredStudents = selectedSegment
-      ? allStudents.filter((student) => segmentMap[selectedSegment].includes(student.id))
+      ? allStudents.filter((student) =>
+          segmentMap[selectedSegment].includes(student.id),
+        )
       : allStudents
 
     const skip = (page - 1) * PAGE_SIZE
@@ -308,6 +315,7 @@ export default async function ProfessorStudentsPage({
 }: ProfessorStudentsPageProps) {
   const session = await auth()
   if (!session?.user?.id) redirect('/login')
+  if (session.user.role !== 'PROFESSOR') redirect('/student/dashboard')
 
   const params = await searchParams
   const page = Math.max(1, Number(params.page || 1) || 1)
@@ -363,7 +371,11 @@ export default async function ProfessorStudentsPage({
               ['BEGINNER', 'Iniciantes', segmentCounts.BEGINNER],
               ['ADVANCED', 'Avançados', segmentCounts.ADVANCED],
               ['PREMIUM', 'Premium', segmentCounts.PREMIUM],
-              ['LOW_FREQUENCY', 'Baixa frequência', segmentCounts.LOW_FREQUENCY],
+              [
+                'LOW_FREQUENCY',
+                'Baixa frequência',
+                segmentCounts.LOW_FREQUENCY,
+              ],
               [
                 'HIGH_CONSISTENCY',
                 'Alta consistência',
@@ -402,7 +414,10 @@ export default async function ProfessorStudentsPage({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <form action={runBatch} className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <form
+            action={runBatch}
+            className="grid grid-cols-1 md:grid-cols-2 gap-3"
+          >
             <select
               name="segment"
               className="h-10 rounded-md border border-input bg-background px-3 text-sm"
@@ -423,7 +438,9 @@ export default async function ProfessorStudentsPage({
               <option value="SEND_REMINDER">Enviar lembrete</option>
               <option value="APPLY_MONTHLY_GOAL">Aplicar meta mensal</option>
               <option value="RECOMMEND_LESSON">Recomendar aula</option>
-              <option value="COLLECTIVE_FEEDBACK">Disparar feedback coletivo</option>
+              <option value="COLLECTIVE_FEEDBACK">
+                Disparar feedback coletivo
+              </option>
             </select>
 
             <input

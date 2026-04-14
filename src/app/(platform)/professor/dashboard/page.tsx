@@ -66,6 +66,7 @@ const getProfessorData = unstable_cache(
 export default async function ProfessorDashboardPage() {
   const session = await auth()
   if (!session?.user?.id) redirect('/login')
+  if (session.user.role !== 'PROFESSOR') redirect('/student/dashboard')
 
   const { courses, enrollmentCount, feedbacks, upcomingLives } =
     await getProfessorData(session.user.id)

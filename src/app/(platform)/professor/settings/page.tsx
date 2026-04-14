@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 export default async function ProfessorSettingsPage() {
   const session = await auth()
   if (!session?.user?.id) redirect('/login')
+  if (session.user.role !== 'PROFESSOR') redirect('/student/dashboard')
 
   const theme = await getCurrentThemeSettings()
 

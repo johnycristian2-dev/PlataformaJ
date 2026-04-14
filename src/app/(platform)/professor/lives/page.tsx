@@ -41,6 +41,7 @@ export default async function ProfessorLivesPage({
 }: ProfessorLivesPageProps) {
   const session = await auth()
   if (!session?.user?.id) redirect('/login')
+  if (session.user.role !== 'PROFESSOR') redirect('/student/dashboard')
 
   const params = await searchParams
   const page = Math.max(1, Number(params.page || 1) || 1)
@@ -132,7 +133,8 @@ export default async function ProfessorLivesPage({
               Live exclusiva para premium
             </label>
             <p className="md:col-span-2 text-xs text-muted-foreground">
-              Exemplo: terça 19h por 8 semanas gera automaticamente 8 ocorrências.
+              Exemplo: terça 19h por 8 semanas gera automaticamente 8
+              ocorrências.
             </p>
             <div className="md:col-span-2">
               <button

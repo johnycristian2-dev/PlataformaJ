@@ -106,9 +106,9 @@ export async function updateUserRoleByAdminAction(formData: FormData) {
     })
 
     revalidatePath('/admin/users')
-  revalidatePath('/admin/professors')
+    revalidatePath('/admin/professors')
     revalidatePath('/admin/dashboard')
-  revalidateTag('users')
+    revalidateTag('users')
 
     return { success: true }
   } catch (error) {
@@ -372,10 +372,19 @@ export async function setProfessorApprovalByAdminAction(formData: FormData) {
       )
     }
 
+    // Revalidate all professor-related paths
+    revalidateTag('professors')
+    revalidateTag('users')
     revalidatePath('/admin/dashboard')
     revalidatePath('/admin/users')
     revalidatePath('/admin/professors')
     revalidatePath('/professor/dashboard')
+    revalidatePath('/professor/courses')
+    revalidatePath('/professor/students')
+    revalidatePath('/professor/feedback')
+    revalidatePath('/professor/lives')
+    revalidatePath('/professor/trainings')
+    revalidatePath('/professor/settings')
 
     return { success: true }
   } catch (error) {

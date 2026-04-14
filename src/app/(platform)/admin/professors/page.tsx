@@ -177,28 +177,30 @@ export default async function AdminProfessorsPage() {
                     </form>
                   )}
 
-                  <form
-                    action={setProfessorApproval}
-                    className="flex flex-wrap items-center gap-2"
-                  >
-                    <input
-                      type="hidden"
-                      name="professorProfileId"
-                      value={prof.id}
-                    />
-                    <input type="hidden" name="approved" value="false" />
-                    <input
-                      type="text"
-                      name="reason"
-                      required
-                      minLength={10}
-                      placeholder="Motivo da rejeição (mínimo 10 caracteres)"
-                      className="h-8 w-[280px] rounded-md border border-input bg-background px-2 text-xs"
-                    />
-                    <Button type="submit" size="sm" variant="destructive">
-                      Rejeitar candidatura
-                    </Button>
-                  </form>
+                  {!prof.isApproved && (
+                    <form
+                      action={setProfessorApproval}
+                      className="flex flex-wrap items-center gap-2"
+                    >
+                      <input
+                        type="hidden"
+                        name="professorProfileId"
+                        value={prof.id}
+                      />
+                      <input type="hidden" name="approved" value="false" />
+                      <input
+                        type="text"
+                        name="reason"
+                        required
+                        minLength={10}
+                        placeholder="Motivo da rejeição (mínimo 10 caracteres)"
+                        className="h-8 w-[280px] rounded-md border border-input bg-background px-2 text-xs"
+                      />
+                      <Button type="submit" size="sm" variant="destructive">
+                        Rejeitar candidatura
+                      </Button>
+                    </form>
+                  )}
                 </div>
               </div>
             ))
