@@ -230,10 +230,11 @@ export async function registerAction(input: SignUpInput) {
 
         revalidatePath('/admin/professors')
         revalidatePath('/admin/dashboard')
+        revalidatePath('/student/profile')
         revalidatePath('/student/dashboard')
 
         const { redirect } = await import('next/navigation')
-        redirect('/student/dashboard?application=professor-pending')
+        redirect('/student/profile?application=professor-pending')
       }
 
       return {

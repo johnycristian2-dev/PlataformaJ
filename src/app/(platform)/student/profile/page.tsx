@@ -6,7 +6,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { updateStudentProfileAction } from '@/modules/student/actions'
 import { ROUTES } from '@/lib/constants'
 
-export default async function StudentProfilePage() {
+type StudentProfilePageProps = {
+  searchParams: Promise<{ application?: string }>
+}
+
+export default async function StudentProfilePage({
+  searchParams,
+}: StudentProfilePageProps) {
+  const { application } = await searchParams
+  const hasProfessorApplicationPending = application === 'professor-pending'
+
   const session = await auth()
   if (!session?.user?.id) redirect('/login')
 
@@ -35,6 +44,17 @@ export default async function StudentProfilePage() {
         <p className="text-muted-foreground mt-1">
           Atualize seus dados pessoais e informações de treino.
         </p>
+        {hasProfessorApplicationPending && (
+          <div className="mt-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4">
+            <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+              Recebemos sua candidatura para professor.
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Seu cadastro foi enviado para análise da equipe admin. Você será
+              avisado assim que houver atualização.
+            </p>
+          </div>
+        )}
         {!user.studentProfile?.onboardingCompleted && (
           <div className="mt-4 rounded-xl border border-primary/20 bg-primary/10 p-4">
             <p className="text-sm font-semibold">
