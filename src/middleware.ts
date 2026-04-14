@@ -34,9 +34,22 @@ export default auth(function middleware(req: MiddlewareAuthRequest) {
   const role: string = (session?.user?.role ?? '').toUpperCase()
   const pathname = nextUrl.pathname
   const roleParam = nextUrl.searchParams.get('role')?.toLowerCase().trim()
+  const hasProfessorIntent =
+    roleParam === 'professor' || roleParam === 'teacher'
   const wantsProfessorApplication =
     pathname.startsWith('/register') &&
-    (roleParam === 'professor' || roleParam === 'teacher')
+    hasProfessorIntent
+
+  // Fallback para links legados que ainda apontem para dashboard com role=professor.
+  if (
+    isLoggedIn &&
+    pathname.startsWith('/student/dashboard') &&
+    hasProfessorIntent &&
+    role !== 'ADMIN' &&
+    role !== 'PROFESSOR'
+  ) {
+    return NextResponse.redirect(new URL('/register?role=professor', nextUrl))
+  }
 
   // ── Rotas de autenticação ─────────────────────────────────────────────────
   const isAuthRoute =
