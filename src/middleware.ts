@@ -37,8 +37,7 @@ export default auth(function middleware(req: MiddlewareAuthRequest) {
   const hasProfessorIntent =
     roleParam === 'professor' || roleParam === 'teacher'
   const wantsProfessorApplication =
-    pathname.startsWith('/register') &&
-    hasProfessorIntent
+    pathname.startsWith('/register') && hasProfessorIntent
 
   // Fallback para links legados que ainda apontem para dashboard com role=professor.
   if (
